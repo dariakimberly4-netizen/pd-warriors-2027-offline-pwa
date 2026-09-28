@@ -133,3 +133,33 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
   .moduleCopy strong{font-size:27px!important}
   .moduleCopy small{font-size:19px!important}
 }
+
+/* v8 — slightly larger mobile readability */
+@media (max-width: 800px){
+  body{font-size:23px!important}
+  .org{font-size:19px!important}
+  .brand h1{font-size:47px!important}
+  .subtitle{font-size:26px!important}
+  .offlineTitle{font-size:29px!important}
+  .offlineBox p{font-size:23px!important}
+  .moduleCard{min-height:166px!important;grid-template-columns:80px minmax(0,1fr) 28px!important}
+  .badge{height:80px!important;font-size:21px!important}
+  .moduleCopy strong{font-size:32px!important}
+  .moduleCopy small{font-size:22px!important}
+  .sectionHead h2{font-size:36px!important}
+  .lead{font-size:24px!important}
+  .note{font-size:19px!important}
+  .field{font-size:23px!important}
+  .primary,.danger{font-size:22px!important}
+  .personRow b{font-size:26px!important}
+  .personRow small{font-size:20px!important}
+}
+@media (max-width: 420px){
+  .org{font-size:16px!important}
+  .brand h1{font-size:40px!important}
+  .subtitle{font-size:22px!important}
+  .moduleCard{min-height:156px!important;grid-template-columns:70px minmax(0,1fr) 22px!important}
+  .badge{height:70px!important;font-size:19px!important}
+  .moduleCopy strong{font-size:29px!important}
+  .moduleCopy small{font-size:20px!important}
+}
