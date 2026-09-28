@@ -1,1 +1,236 @@
-(()=>{const K='pdw-people-v3';const S='pdw-selected-v3';const defaultPeople=[{id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},{id:'C-0001',name:'Jose Santos',type:'Companion',snack:false,lunch:false,raffle:null}];const normalize=(a)=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),snack:!!p.snack,lunch:!!p.lunch,raffle:p.type==='Companion'?null:!!p.raffle}));let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people')||'null')||defaultPeople);let selected=Number(localStorage.getItem(S));if(!Number.isInteger(selected)||!people[selected])selected=null;let screen='home';let query='';let winner='';let scannerStream=null;const save=()=>localStorage.setItem(K,JSON.stringify(people));save();const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));const app=document.getElementById('app');function setScreen(s){screen=s;stopScanner();render();if(s==='scanner')startScanner()}function select(i){selected=i;localStorage.setItem(S,String(i));screen='pass';render()}function passId(type,n,raw){if(raw)return String(raw).trim();return (type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}function render(){const p=selected==null?null:people[selected];app.innerHTML=`<main><header class="top"><div class="logo">PDW</div><div><small>PARKINSON'S DISEASE WARRIORS PHILIPPINES</small><h1>Get Together 2027</h1><p>Offline Attendee & QR System</p></div></header><div class="status"><b>OFFLINE READY</b><br><span class="note">Open online once and add to Home Screen. Imported data and claims stay on this device.</span></div><nav class="menu">${[['home','Home'],['register','Register / Excel'],['database','Attendee Database'],['pass','Digital Pass'],['scanner','QR Scanner'],['claims','Claims'],['raffle','Raffle Draw'],['export','Export']].map(x=>`<button data-screen="${x[0]}" class="${screen===x[0]?'active':''}">${x[1]}</button>`).join('')}</nav>${body(p)}<footer>Strength • Hope • Courage • Unity • Healing</footer></main>`;app.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>setScreen(b.dataset.screen));wire(p)}function body(p){if(screen==='home')return `<section class="card"><h2>Event System</h2><p><span class="badge">${people.length} people saved</span></p><p>Use the large buttons above. Staff can import the attendee list, search a name, select the person, generate a QR pass, scan the pass, and record one-time claims.</p></section>`;if(screen==='register')return `<section class="card"><h2>Register / Import Excel</h2><label class="primary" style="display:inline-flex;align-items:center">CHOOSE EXCEL<input id="excel" hidden type="file" accept=".xlsx,.xls"></label><p class="note">Looks for Participant Name and Companion Name columns. Existing Participant No. and Companion No. are used as pass IDs when available.</p><hr><h3>Walk-in</h3><input id="walkname" class="field" placeholder="Full name"><div class="split"><select id="walktype" class="field"><option>Participant</option><option>Companion</option></select><button id="addwalk" class="primary">ADD WALK-IN</button></div></section>`;if(screen==='database')return `<section class="card"><h2>Searchable Attendee Database</h2><input id="search" class="field" value="${esc(query)}" placeholder="Search first name or last name"><div id="results">${results()}</div></section>`;if(screen==='pass')return p?passCard(p):`<section class="card empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`;if(screen==='claims')return p?`<section class="card"><h2>Claims</h2>${passSummary(p)}${claimButtons(p)}</section>`:`<section class="card empty">Select an attendee first.</section>`;if(screen==='scanner')return `<section class="card"><h2>QR Scanner</h2><p id="scanmsg">Tap START CAMERA and point the rear camera at the attendee QR code.</p><button id="startcam" class="primary">START CAMERA</button><video id="camera" class="camera" playsinline muted></video><p class="note">On supported Android browsers, a successful scan automatically selects that attendee.</p></section>`;if(screen==='raffle')return `<section class="card"><h2>Raffle Draw</h2><p>Eligible pool: <b>${people.filter(x=>x.type==='Participant').length} participants</b>. Companions are excluded.</p><button id="draw" class="danger">DRAW WINNER</button>${winner?`<div class="winner">${esc(winner)}</div>`:''}</section>`;if(screen==='export')return `<section class="card"><h2>Export</h2><p>Export attendee and claim status from this device.</p><button id="csv" class="primary">DOWNLOAD CSV</button><p class="note">This does not export actual ID/document image files.</p></section>`;return ''}function results(){const hits=people.map((p,i)=>({p,i})).filter(x=>x.p.name.toLowerCase().includes(query.trim().toLowerCase()));if(!hits.length)return '<div class="empty">No name found.</div>';return hits.map(({p,i})=>`<div class="row"><div><b>${esc(p.name)}</b><span>${esc(p.type)} • Pass ${esc(p.id)} • ${p.type==='Participant'?'Raffle eligible':'No raffle'}</span></div><button class="primary select" data-i="${i}">SELECT</button></div>`).join('')}function passSummary(p){return `<p><b class="name">${esc(p.name)}</b><span class="muted">${esc(p.type)} • Pass #${esc(p.id)}</span></p>`}function passCard(p){return `<section class="card pass"><h2>Digital Pass</h2>${passSummary(p)}<div id="qr" class="qr"></div><p><b>QR CODE GENERATED</b></p><button id="gotoclaims" class="primary">OPEN CLAIMS</button></section>`}function claimButtons(p){const ks=['snack','lunch',...(p.raffle===null?[]:['raffle'])];return `<div class="claims">${ks.map(k=>`<button class="claim ${p[k]?'claimed':''}" data-k="${k}" ${p[k]?'disabled':''}>${k.toUpperCase()}<small>${p[k]?'✓ CLAIMED':'TAP TO CLAIM'}</small></button>`).join('')}</div>`}function wire(p){const ex=document.getElementById('excel');if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);const add=document.getElementById('addwalk');if(add)add.onclick=()=>{const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;if(!n)return alert('Enter a name.');const count=people.filter(x=>x.type===t).length+1;people.push({id:passId(t,count),name:n,type:t,snack:false,lunch:false,raffle:t==='Companion'?null:false});save();alert('Walk-in saved offline.');render()};const s=document.getElementById('search');if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();document.querySelectorAll('.select').forEach(b=>b.onclick=()=>select(Number(b.dataset.i)))};document.querySelectorAll('.select').forEach(b=>b.onclick=()=>select(Number(b.dataset.i)));if(p&&document.getElementById('qr')){const el=document.getElementById('qr');if(window.QRCode)new QRCode(el,{text:JSON.stringify({event:'PDWPH-GET-TOGETHER-2027',passId:p.id,name:p.name,type:p.type}),width:190,height:190,correctLevel:QRCode.CorrectLevel.M});else el.textContent='QR library loading…'}const g=document.getElementById('gotoclaims');if(g)g.onclick=()=>setScreen('claims');document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(selected==null)return;people[selected][k]=true;save();render()});const d=document.getElementById('draw');if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};const c=document.getElementById('csv');if(c)c.onclick=exportCsv;const st=document.getElementById('startcam');if(st)st.onclick=startScanner}async function importExcel(file){try{if(!window.XLSX)throw Error('Excel library not loaded');const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),sh=wb.Sheets[wb.SheetNames[0]],m=XLSX.utils.sheet_to_json(sh,{header:1,defval:''});const hi=m.findIndex(r=>Array.isArray(r)&&r.some(v=>String(v).trim().toLowerCase()==='participant name'));if(hi<0)return alert('Participant Name header not found.');const h=m[hi].map(v=>String(v).trim().toLowerCase()),pc=h.indexOf('participant name'),cc=h.indexOf('companion name'),pid=h.indexOf('participant no.'),cid=h.indexOf('companion no.');const a=[];let pn=0,cn=0;m.slice(hi+1).forEach(r=>{const pnme=String(r[pc]||'').trim(),cnme=cc>=0?String(r[cc]||'').trim():'';if(pnme){pn++;a.push({id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',snack:false,lunch:false,raffle:false})}if(cnme){cn++;a.push({id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',snack:false,lunch:false,raffle:null})}});if(!a.length)return alert('No participant names found below the header.');people=a;selected=null;save();localStorage.removeItem(S);alert(a.length+' people imported and saved offline.');render()}catch(e){alert('Could not read this Excel file.')}}function exportCsv(){const rows=[['Pass ID','Name','Type','Snack','Lunch','Raffle'],...people.map(p=>[p.id,p.name,p.type,p.snack?'Claimed':'Not claimed',p.lunch?'Claimed':'Not claimed',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed'])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_Attendees_Claims.csv';a.click();URL.revokeObjectURL(a.href)}async function startScanner(){const msg=document.getElementById('scanmsg');const video=document.getElementById('camera');if(!video)return;if(!('BarcodeDetector'in window)){msg.textContent='QR scanning is not supported by this browser. Use Android Chrome or search the attendee name manually.';return}try{scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});video.srcObject=scannerStream;await video.play();const detector=new BarcodeDetector({formats:['qr_code']});msg.textContent='Camera active — point at the QR code.';const loop=async()=>{if(screen!=='scanner'||!scannerStream)return;try{const codes=await detector.detect(video);if(codes[0]){const raw=codes[0].rawValue;let data;try{data=JSON.parse(raw)}catch{}const i=people.findIndex(x=>(data?.passId&&x.id===data.passId)||(data?.name&&x.name===data.name));if(i>=0){stopScanner();selected=i;localStorage.setItem(S,String(i));screen='claims';render();return}msg.textContent='QR read, but attendee was not found on this device.'}}catch{}requestAnimationFrame(loop)};loop()}catch{msg.textContent='Camera permission was not granted or the camera is unavailable.'}}function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}render()})();
+(()=> {
+const K='pdw-people-v4', S='pdw-selected-v4';
+const defaultPeople=[
+ {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
+ {id:'C-0001',name:'Jose Santos',type:'Companion',snack:false,lunch:false,raffle:null}
+];
+const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),snack:!!p.snack,lunch:!!p.lunch,raffle:p.type==='Companion'?null:!!p.raffle}));
+let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
+let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
+let screen='home', query='', winner='', scannerStream=null;
+const save=()=>localStorage.setItem(K,JSON.stringify(people)); save();
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const app=document.getElementById('app');
+const modules=[
+ ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
+ ['database','DB','Attendee Database','Search imported names by first or last name'],
+ ['documents','2','Documents','Step 2 • Collect PWD / Senior ID / authorization'],
+ ['pass','3','Digital Passes','Step 3 • Generate individual QR codes'],
+ ['scanner','4','QR Scanner','Step 4 • Scan participant or companion QR'],
+ ['claims','5','Claims','Step 5 • Tap Snack, Lunch or Raffle to mark CLAIMED'],
+ ['raffle','DRAW','Raffle Draw','Draw a winner from eligible participants only'],
+ ['export','DOC','Export Documents','Export document and claim status offline']
+];
+
+function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
+function setScreen(s){screen=s; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
+function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='pass';render()}
+function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
+
+function shell(content){
+ return `<main>
+ <header class="brand">
+   <img class="brandLogo" src="https://e6f82797-63ce-4bab-a068-36498212aea2.sandbox.floot.app/_cdn/static/17d6c48c-4486-4966-82fa-9ac8c81f53ed-pd-warriors-logo.jpg" alt="PD Warriors Philippines logo">
+   <div class="brandText">
+     <div class="org">PARKINSON'S DISEASE WARRIORS<br>PHILIPPINES</div>
+     <h1>Get Together 2027</h1>
+     <div class="subtitle">Digital Stub &amp; Document System</div>
+   </div>
+ </header>
+ <div class="rule"></div>
+ ${content}
+ <footer>STRENGTH • HOPE • COURAGE • UNITY • HEALING</footer>
+ </main>`;
+}
+
+function home(){
+ return `
+ <section class="offlineBox">
+   <div class="offlineTitle">OFFLINE MODE</div>
+   <p>This event system is designed to operate from data stored on this device.<br>
+   Participants receive Snack + Lunch + Raffle.<br>
+   Companions receive Snack + Lunch only.</p>
+ </section>
+ <section class="moduleList">
+   ${modules.map(([id,badge,title,desc])=>`
+    <button class="moduleCard" data-screen="${id}">
+      <span class="badge">${badge}</span>
+      <span class="moduleCopy"><strong>${title}</strong><small>${desc}</small></span>
+      <span class="chev">›</span>
+    </button>`).join('')}
+ </section>`;
+}
+
+function pageHeader(title){
+ return `<div class="sectionHead"><button id="backHome" class="backBtn">‹ HOME</button><h2>${title}</h2></div>`;
+}
+
+function body(){
+ const p=selected==null?null:people[selected];
+ if(screen==='home')return home();
+ if(screen==='register')return pageHeader('Register')+`
+ <section class="panel">
+   <p class="lead">Upload the event Excel list or add a walk-in manually. Data is saved on this device.</p>
+   <label class="primary actionLabel">CHOOSE EXCEL<input id="excel" hidden type="file" accept=".xlsx,.xls"></label>
+   <p class="note">Looks for <b>Participant Name</b> and <b>Companion Name</b>. Existing Participant No. and Companion No. are used as pass IDs when available.</p>
+   <div class="divider"></div>
+   <h3>Walk-in Registration</h3>
+   <input id="walkname" class="field" placeholder="Full name">
+   <div class="split"><select id="walktype" class="field"><option>Participant</option><option>Companion</option></select><button id="addwalk" class="primary">ADD WALK-IN</button></div>
+   <p class="savedCount">${people.length} people saved on this device.</p>
+ </section>`;
+
+ if(screen==='database')return pageHeader('Attendee Database')+`
+ <section class="panel">
+   <p class="lead">Search by first name, last name, or any part of the attendee name.</p>
+   <input id="search" class="field" value="${esc(query)}" placeholder="Search first name or last name…">
+   <div id="results">${results()}</div>
+ </section>`;
+
+ if(screen==='documents')return pageHeader('Documents')+`
+ <section class="panel">
+   <p class="lead">Document collection module</p>
+   <div class="docRows">
+     <div class="docRow"><div><b>PWD ID</b><small>Participant document</small></div><span>NOT SUBMITTED</span></div>
+     <div class="docRow"><div><b>Senior Citizen ID</b><small>When applicable</small></div><span>NOT SUBMITTED</span></div>
+     <div class="docRow"><div><b>Authorization Letter</b><small>When required</small></div><span>NOT SUBMITTED</span></div>
+   </div>
+   <p class="note">This GitHub version currently records attendee and claim data locally. Actual document-file upload is not yet enabled.</p>
+ </section>`;
+
+ if(screen==='pass')return pageHeader('Digital Passes')+(p?passCard(p):`
+ <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
+
+ if(screen==='claims')return pageHeader('Claims')+(p?`
+ <section class="panel"><div class="passCompact">${passSummary(p)}</div>${claimButtons(p)}</section>`:`
+ <section class="panel empty">Select an attendee first.</section>`);
+
+ if(screen==='scanner')return pageHeader('QR Scanner')+`
+ <section class="panel">
+   <p id="scanmsg" class="lead">Tap START CAMERA and point the rear camera at the attendee QR code.</p>
+   <button id="startcam" class="primary full">START CAMERA</button>
+   <video id="camera" class="camera" playsinline muted></video>
+   <p class="note">If camera QR detection is unavailable, search the attendee name manually.</p>
+ </section>`;
+
+ if(screen==='raffle')return pageHeader('Raffle Draw')+`
+ <section class="panel">
+   <p class="lead">Eligible pool: <b>${people.filter(x=>x.type==='Participant').length} participants</b>. Companions are excluded.</p>
+   <button id="draw" class="danger full">DRAW WINNER</button>
+   ${winner?`<div class="winner">${esc(winner)}</div>`:''}
+ </section>`;
+
+ if(screen==='export')return pageHeader('Export Documents')+`
+ <section class="panel">
+   <p class="lead">Export attendee and claim status stored on this device.</p>
+   <button id="csv" class="primary full">DOWNLOAD CSV</button>
+   <p class="note">The CSV does not contain actual PWD ID, Senior Citizen ID, or authorization-letter image files.</p>
+ </section>`;
+ return '';
+}
+
+function render(){
+ app.innerHTML=shell(body());
+ app.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>setScreen(b.dataset.screen));
+ const back=document.getElementById('backHome'); if(back)back.onclick=()=>setScreen('home');
+ wire();
+}
+
+function results(){
+ const hits=people.map((p,i)=>({p,i})).filter(x=>x.p.name.toLowerCase().includes(query.trim().toLowerCase()));
+ if(!hits.length)return '<div class="empty">No name found.</div>';
+ return hits.map(({p,i})=>`
+  <div class="personRow">
+    <div><b>${esc(p.name)}</b><small>${esc(p.type)} • Pass ${esc(p.id)} • ${p.type==='Participant'?'Raffle eligible':'No raffle'}</small></div>
+    <button class="primary select" data-i="${i}">SELECT</button>
+  </div>`).join('');
+}
+
+function passSummary(p){return `<div class="passName">${esc(p.name)}</div><div class="passMeta">${esc(p.type)} • Pass #${esc(p.id)}</div>`}
+function passCard(p){return `
+ <section class="panel pass">
+   ${passSummary(p)}
+   <div id="qr" class="qr"></div>
+   <div class="qrLabel">QR CODE GENERATED</div>
+   <button id="gotoclaims" class="primary full">OPEN CLAIMS</button>
+ </section>`}
+function claimButtons(p){
+ const ks=['snack','lunch',...(p.raffle===null?[]:['raffle'])];
+ return `<div class="claims">${ks.map(k=>`
+  <button class="claim ${p[k]?'claimed':''}" data-k="${k}" ${p[k]?'disabled':''}>
+   <span>${k.toUpperCase()}</span><small>${p[k]?'✓ CLAIMED':'TAP TO CLAIM'}</small>
+  </button>`).join('')}</div>`;
+}
+
+function wire(){
+ const ex=document.getElementById('excel'); if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);
+ const add=document.getElementById('addwalk'); if(add)add.onclick=()=>{
+  const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;
+  if(!n)return alert('Enter a name.');
+  const count=people.filter(x=>x.type===t).length+1;
+  people.push({id:passId(t,count),name:n,type:t,snack:false,lunch:false,raffle:t==='Companion'?null:false});
+  save();alert('Walk-in saved offline.');render()
+ };
+ const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
+ bindSelect();
+ const p=selected==null?null:people[selected];
+ if(p&&document.getElementById('qr')){
+  const el=document.getElementById('qr');
+  if(window.QRCode)new QRCode(el,{text:JSON.stringify({event:'PDWPH-GET-TOGETHER-2027',passId:p.id,name:p.name,type:p.type}),width:210,height:210,correctLevel:QRCode.CorrectLevel.M});
+  else el.textContent='QR library loading…';
+ }
+ const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
+ document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(selected==null)return;people[selected][k]=true;save();render()});
+ const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
+ const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
+ const st=document.getElementById('startcam'); if(st)st.onclick=startScanner;
+}
+function bindSelect(){document.querySelectorAll('.select').forEach(b=>b.onclick=()=>selectPerson(Number(b.dataset.i)))}
+
+async function importExcel(file){
+ try{
+  if(!window.XLSX)throw Error('Excel library not loaded');
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),sh=wb.Sheets[wb.SheetNames[0]],m=XLSX.utils.sheet_to_json(sh,{header:1,defval:''});
+  const hi=m.findIndex(r=>Array.isArray(r)&&r.some(v=>String(v).trim().toLowerCase()==='participant name'));
+  if(hi<0)return alert('Participant Name header not found.');
+  const h=m[hi].map(v=>String(v).trim().toLowerCase()),pc=h.indexOf('participant name'),cc=h.indexOf('companion name'),pid=h.indexOf('participant no.'),cid=h.indexOf('companion no.');
+  const a=[];let pn=0,cn=0;
+  m.slice(hi+1).forEach(r=>{
+   const pnme=String(r[pc]||'').trim(),cnme=cc>=0?String(r[cc]||'').trim():'';
+   if(pnme){pn++;a.push({id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',snack:false,lunch:false,raffle:false})}
+   if(cnme){cn++;a.push({id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',snack:false,lunch:false,raffle:null})}
+  });
+  if(!a.length)return alert('No participant names found below the header.');
+  people=a;selected=null;save();localStorage.removeItem(S);alert(a.length+' people imported and saved offline.');render()
+ }catch(e){alert('Could not read this Excel file.')}
+}
+
+function exportCsv(){
+ const rows=[['Pass ID','Name','Type','Snack','Lunch','Raffle'],...people.map(p=>[p.id,p.name,p.type,p.snack?'Claimed':'Not claimed',p.lunch?'Claimed':'Not claimed',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed'])];
+ const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_Attendees_Claims.csv';a.click();URL.revokeObjectURL(a.href)
+}
+
+async function startScanner(){
+ const msg=document.getElementById('scanmsg'),video=document.getElementById('camera');if(!video)return;
+ if(!('BarcodeDetector'in window)){msg.textContent='QR scanning is not supported by this browser. Search the attendee name manually.';return}
+ try{
+  scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});video.srcObject=scannerStream;await video.play();
+  const detector=new BarcodeDetector({formats:['qr_code']});msg.textContent='Camera active — point at the QR code.';
+  const loop=async()=>{
+   if(screen!=='scanner'||!scannerStream)return;
+   try{
+    const codes=await detector.detect(video);
+    if(codes[0]){
+     let data;try{data=JSON.parse(codes[0].rawValue)}catch{}
+     const i=people.findIndex(x=>(data?.passId&&x.id===data.passId)||(data?.name&&x.name===data.name));
+     if(i>=0){stopScanner();selected=i;localStorage.setItem(S,String(i));screen='claims';render();return}
+     msg.textContent='QR read, but attendee was not found on this device.'
+    }
+   }catch{}
+   requestAnimationFrame(loop)
+  };loop()
+ }catch{msg.textContent='Camera permission was not granted or the camera is unavailable.'}
+}
+render();
+})();
