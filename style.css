@@ -81,3 +81,55 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
   .moduleCopy strong{font-size:26px!important}
   .moduleCopy small{font-size:19px!important}
 }
+
+/* v7 — strong mobile readability */
+@media (max-width: 800px){
+  html{font-size:20px!important}
+  body{font-size:22px!important;line-height:1.55!important}
+  main{width:100%!important;max-width:none!important;padding:20px 16px 28px!important}
+  .brand{grid-template-columns:96px minmax(0,1fr)!important;gap:16px!important;align-items:center!important}
+  .brandLogo{width:92px!important;height:92px!important}
+  .org{font-size:18px!important;line-height:1.28!important;letter-spacing:1.2px!important}
+  .brand h1{font-size:44px!important;line-height:1!important;margin:10px 0 8px!important}
+  .subtitle{font-size:24px!important;line-height:1.25!important}
+  .rule{height:4px!important;margin:28px 0 30px!important}
+  .offlineBox{padding:28px 24px 28px 36px!important;border-radius:22px!important}
+  .offlineTitle{font-size:27px!important;line-height:1.2!important}
+  .offlineBox p{font-size:22px!important;line-height:1.55!important}
+  .moduleList{gap:18px!important}
+  .moduleCard{
+    width:100%!important;
+    min-height:158px!important;
+    grid-template-columns:76px minmax(0,1fr) 28px!important;
+    gap:16px!important;
+    padding:20px 16px!important;
+    border-width:2px!important;
+  }
+  .badge{height:76px!important;font-size:20px!important}
+  .moduleCopy strong{font-size:30px!important;line-height:1.15!important}
+  .moduleCopy small{font-size:21px!important;line-height:1.5!important;color:#34493d!important;font-weight:700!important}
+  .chev{font-size:48px!important}
+  .sectionHead h2{font-size:34px!important}
+  .backBtn{font-size:20px!important}
+  .panel{padding:24px!important}
+  .lead{font-size:23px!important;line-height:1.55!important}
+  .note{font-size:18px!important;line-height:1.55!important}
+  .field{font-size:22px!important;min-height:66px!important}
+  .primary,.danger{font-size:21px!important;min-height:64px!important}
+  .personRow b{font-size:25px!important}
+  .personRow small{font-size:19px!important}
+  .passName{font-size:34px!important}
+  .passMeta{font-size:21px!important}
+  .claim{font-size:21px!important;min-height:96px!important}
+}
+@media (max-width: 420px){
+  .brand{grid-template-columns:82px minmax(0,1fr)!important;gap:12px!important}
+  .brandLogo{width:78px!important;height:78px!important}
+  .org{font-size:15px!important;letter-spacing:.8px!important}
+  .brand h1{font-size:38px!important}
+  .subtitle{font-size:21px!important}
+  .moduleCard{grid-template-columns:66px minmax(0,1fr) 22px!important;min-height:150px!important}
+  .badge{height:66px!important;font-size:18px!important}
+  .moduleCopy strong{font-size:27px!important}
+  .moduleCopy small{font-size:19px!important}
+}
