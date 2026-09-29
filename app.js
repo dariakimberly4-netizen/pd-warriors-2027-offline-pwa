@@ -31,7 +31,25 @@ function ensureLinks(){
 ensureLinks();
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null;
-const NEW_KEY='pdw-new-seen-v21';
+const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', STAFF_PIN='2027';
+let currentStaff=null, staffNames=[], auditLog=[];
+try{currentStaff=JSON.parse(sessionStorage.getItem(STAFF_SESSION)||'null')}catch{}
+try{staffNames=JSON.parse(localStorage.getItem(STAFF_NAMES)||'[]')}catch{}
+try{auditLog=JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]')}catch{}
+function addAudit(action,person=null,detail=''){
+ if(!currentStaff)return;
+ auditLog.unshift({
+   at:new Date().toISOString(),
+   staff:currentStaff.name,
+   action,
+   passId:person?.id||'',
+   attendee:person?.name||'',
+   detail
+ });
+ if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
+ localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
+}
+const NEW_KEY='pdw-new-seen-v23';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -128,12 +146,13 @@ const modules=[
  ['claims','5','Claims','Step 5 • Check-in + Snack + Lunch + Raffle claims'],
  ['raffle','DRAW','Raffle Draw','Draw a winner from eligible participants only'],
  ['export','DOC','Export Documents','Export document and claim status offline'],
- ['backup','SAFE','Backup / Restore','Save or restore all offline event data']
+ ['backup','SAFE','Backup / Restore','Save or restore all offline event data'],
+ ['audit','LOG','Staff Activity','Offline audit trail of staff actions']
 ];
 
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 function setScreen(s){screen=s; pendingCorrection=null; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
-function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='database';render()}
+function selectPerson(i){selected=i;localStorage.setItem(S,String(i));addAudit('Selected attendee',people[i]);screen='database';render()}
 function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
 
 function shell(content){
@@ -147,9 +166,30 @@ function shell(content){
    </div>
  </header>
  <div class="rule"></div>
+ ${currentStaff?`<div class="staffBar"><div><small>OFFLINE STAFF SESSION</small><b>${esc(currentStaff.name)}</b></div><button id="logoutStaff" type="button">LOG OUT</button></div>`:''}
  ${content}
  <footer>STRENGTH • HOPE • COURAGE • UNITY • HEALING</footer>
  </main>`;
+}
+
+function staffLogin(){
+ const recent=[...new Set(staffNames)].slice(0,8);
+ return `
+ <section class="staffLoginPanel">
+   <div class="loginBadge">OFFLINE STAFF LOGIN</div>
+   <h2>Staff Login</h2>
+   <p>Internet is not required. Staff access and activity are stored on this device.</p>
+   <label>Staff Name
+     <input id="staffName" class="field" list="recentStaff" autocomplete="off" placeholder="Enter staff name">
+     <datalist id="recentStaff">${recent.map(n=>`<option value="${esc(n)}"></option>`).join('')}</datalist>
+   </label>
+   <label>4-Digit PIN
+     <input id="staffPin" class="field" inputmode="numeric" maxlength="4" type="password" placeholder="••••">
+   </label>
+   <button id="staffLoginBtn" class="primary full">LOGIN OFFLINE</button>
+   <p id="staffLoginMsg" class="loginMsg"></p>
+   <div class="loginHint">Event PIN: <b>2027</b></div>
+ </section>`;
 }
 
 function home(){
@@ -176,6 +216,7 @@ function pageHeader(title){
 }
 
 function body(){
+ if(!currentStaff)return staffLogin();
  const p=selected==null?null:people[selected];
  if(screen==='home')return home();
  if(screen==='register')return pageHeader('Register')+`
@@ -360,6 +401,19 @@ function body(){
    <p class="note"><b>Offline:</b> once this version has loaded and cached, the ZIP export works from the documents already stored on this device.</p>
  </section>`;
 
+ if(screen==='audit')return pageHeader('Staff Activity')+`
+ <section class="panel">
+   <p class="lead">Activity is recorded locally on this device while staff are logged in.</p>
+   <div class="auditActions"><button id="auditCsv" class="primary">DOWNLOAD AUDIT CSV</button><button id="clearAudit" class="softBtn">CLEAR AUDIT</button></div>
+   <div class="auditList">
+     ${auditLog.length?auditLog.slice(0,200).map(a=>`
+       <div class="auditRow">
+         <div><b>${esc(a.action)}</b><span>${esc(a.attendee||'System')}${a.passId?' • '+esc(a.passId):''}</span></div>
+         <div><strong>${esc(a.staff)}</strong><small>${formatTime(a.at)}</small></div>
+       </div>`).join(''):'<div class="empty">No staff activity recorded yet.</div>'}
+   </div>
+ </section>`;
+
  if(screen==='backup')return pageHeader('Backup / Restore')+`
  <section class="panel">
    <p class="lead">Create one offline backup file containing attendees, attendance, stub claims, timestamps, and uploaded documents.</p>
@@ -471,6 +525,7 @@ async function removeDoc(slot){
  if(selected==null)return;
  if(!confirm('Delete this document from this device?'))return;
  await deleteDoc(docKey(people[selected],slot));
+ addAudit('Document deleted',people[selected],slot);
  const g=docGroup(slot);
  if(g){
    const p=people[selected];
@@ -505,6 +560,21 @@ function claimButtons(p){
 }
 
 function wire(){
+ const loginBtn=document.getElementById('staffLoginBtn');
+ if(loginBtn)loginBtn.onclick=()=>{
+   const name=document.getElementById('staffName').value.trim();
+   const pin=document.getElementById('staffPin').value.trim();
+   const msg=document.getElementById('staffLoginMsg');
+   if(!name){msg.textContent='Enter the staff name.';return}
+   if(pin!==STAFF_PIN){msg.textContent='Incorrect PIN.';return}
+   currentStaff={name,loginAt:new Date().toISOString()};
+   sessionStorage.setItem(STAFF_SESSION,JSON.stringify(currentStaff));
+   if(!staffNames.includes(name)){staffNames.unshift(name);staffNames=staffNames.slice(0,20);localStorage.setItem(STAFF_NAMES,JSON.stringify(staffNames))}
+   addAudit('Staff login');
+   screen='home';render();
+ };
+ const logout=document.getElementById('logoutStaff');
+ if(logout)logout.onclick=()=>{addAudit('Staff logout');currentStaff=null;sessionStorage.removeItem(STAFF_SESSION);screen='home';stopScanner();render()};
  const ex=document.getElementById('excel'); if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);
  const openPass=document.getElementById('openPass'); if(openPass)openPass.onclick=()=>setScreen('pass');
  const profileDocs=document.getElementById('profileDocs'); if(profileDocs)profileDocs.onclick=()=>setScreen('documents');
@@ -517,14 +587,16 @@ function wire(){
  document.querySelectorAll('.verifySelect').forEach(sel=>sel.onchange=e=>{
    if(selected==null)return;
    people[selected].docVerify[e.target.dataset.verify]=e.target.value;
+   addAudit('Document verification changed',people[selected],e.target.dataset.verify+' → '+e.target.value);
    markSeen('verification');save();render();
  });
- const notes=document.getElementById('docNotes'); if(notes)notes.onchange=e=>{if(selected==null)return;people[selected].docNotes=e.target.value;save()};
+ const notes=document.getElementById('docNotes'); if(notes)notes.onchange=e=>{if(selected==null)return;people[selected].docNotes=e.target.value;addAudit('Verification notes updated',people[selected]);save()};
  document.querySelectorAll('.docInput').forEach(inp=>inp.onchange=async e=>{
    const file=e.target.files?.[0]; if(!file||selected==null)return;
    try{
    const slot=e.target.dataset.slot;
    await putDoc(docKey(people[selected],slot),file);
+   addAudit('Document uploaded',people[selected],slot+' • '+file.name);
    const g=docGroup(slot);
    if(g&&people[selected].docVerify[g]==='Not Submitted')people[selected].docVerify[g]='Submitted';
    save();
@@ -541,6 +613,7 @@ function wire(){
   if(!n)return alert('Enter a name.');
   const count=people.filter(x=>x.type===t).length+1;
   people.push({id:passId(t,count),name:n,type:t,linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''});
+  addAudit('Walk-in registered',people[people.length-1]);
   save();alert('Walk-in saved offline.');render()
  };
  const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
@@ -563,6 +636,7 @@ function wire(){
      if(pendingCorrection===k){
        people[selected][k]=false;
        people[selected][k+'At']='';
+       addAudit('Claim corrected / undone',people[selected],k);
        pendingCorrection=null;
        save(); render(); return;
      }
@@ -572,13 +646,18 @@ function wire(){
    pendingCorrection=null;
    people[selected][k]=true;
    people[selected][k+'At']=new Date().toISOString();
+   addAudit(k==='attendance'?'Checked in':'Claim recorded',people[selected],k);
    if(isNew('timestamps'))markSeen('timestamps');
    save(); render();
  },true);
- const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
+ const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';addAudit('Raffle draw',null,winner);render()};
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
  document.querySelectorAll('[data-export-docs]').forEach(b=>b.onclick=()=>exportDocumentFiles(b.dataset.exportDocs));
  const zipBtn=document.getElementById('exportDocsZip'); if(zipBtn)zipBtn.onclick=exportDocumentFiles;
+ const auditCsv=document.getElementById('auditCsv'); if(auditCsv)auditCsv.onclick=exportAuditCsv;
+ const clearAudit=document.getElementById('clearAudit'); if(clearAudit)clearAudit.onclick=()=>{
+   if(confirm('Clear the staff activity log saved on this device?')){addAudit('Cleared audit trail');auditLog=[];localStorage.setItem(AUDIT_KEY,'[]');render()}
+ };
  const bk=document.getElementById('backupNow'); if(bk)bk.onclick=backupEventData;
  const rf=document.getElementById('restoreFile'); if(rf)rf.onchange=e=>e.target.files?.[0]&&restoreEventData(e.target.files[0]);
  const st=document.getElementById('startcam'); if(st)st.onclick=startScanner;
@@ -602,7 +681,7 @@ async function importExcel(file){
    if(pObj)a.push(pObj);if(cObj)a.push(cObj)
   });
   if(!a.length)return alert('No participant names found below the header.');
-  people=normalize(a);ensureLinks();selected=null;save();localStorage.removeItem(S);alert(a.length+' people imported and linked offline.');render()
+  people=normalize(a);ensureLinks();selected=null;addAudit('Excel attendee list imported',null,a.length+' people');save();localStorage.removeItem(S);alert(a.length+' people imported and linked offline.');render()
  }catch(e){alert('Could not read this Excel file.')}
 }
 
@@ -712,6 +791,11 @@ async function exportDocumentFiles(group){
  }catch{alert('Could not create the document ZIP file.')}
 }
 
+function exportAuditCsv(){
+ const rows=[['Time','Staff','Action','Pass ID','Attendee','Detail'],...auditLog.map(a=>[a.at,a.staff,a.action,a.passId,a.attendee,a.detail])];
+ const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_Staff_Audit.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
 async function backupEventData(){
  try{
   const docs=await listDocs();
