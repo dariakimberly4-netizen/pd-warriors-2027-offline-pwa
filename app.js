@@ -11,6 +11,12 @@ let screen='home', query='', winner='', scannerStream=null;
 const save=()=>localStorage.setItem(K,JSON.stringify(people)); save();
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const app=document.getElementById('app');
+const DOC_DB='pdw-documents-v1', DOC_STORE='documents';
+function openDocDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DOC_DB,1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(DOC_STORE))db.createObjectStore(DOC_STORE)};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function putDoc(key,file){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).put({name:file.name,type:file.type,size:file.size,updated:Date.now(),blob:file},key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
+async function getDoc(key){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readonly');const r=tx.objectStore(DOC_STORE).get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}
+async function deleteDoc(key){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
+const docKey=(person,slot)=>person.id+'::'+slot;
 const modules=[
  ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
  ['database','DB','Attendee Database','Search imported names by first or last name'],
@@ -24,7 +30,7 @@ const modules=[
 
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 function setScreen(s){screen=s; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
-function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='pass';render()}
+function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='documents';render();setTimeout(refreshDocStatuses,0)}
 function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
 
 function shell(content){
@@ -87,16 +93,25 @@ function body(){
    <div id="results">${results()}</div>
  </section>`;
 
- if(screen==='documents')return pageHeader('Documents')+`
+ if(screen==='documents')return pageHeader('Documents')+(p?`
  <section class="panel">
-   <p class="lead">Document collection module</p>
-   <div class="docRows">
-     <div class="docRow"><div><b>PWD ID</b><small>Participant document</small></div><span>NOT SUBMITTED</span></div>
-     <div class="docRow"><div><b>Senior Citizen ID</b><small>When applicable</small></div><span>NOT SUBMITTED</span></div>
-     <div class="docRow"><div><b>Authorization Letter</b><small>When required</small></div><span>NOT SUBMITTED</span></div>
+   <div class="selectedBanner">
+     <div><small>SELECTED ATTENDEE</small><b>${esc(p.name)}</b><span>${esc(p.type)} • Pass #${esc(p.id)}</span></div>
+     <button id="openPass" class="primary">OPEN DIGITAL PASS</button>
    </div>
-   <p class="note">This GitHub version currently records attendee and claim data locally. Actual document-file upload is not yet enabled.</p>
- </section>`;
+   <p class="lead">Upload the attendee's supporting documents. Files are stored locally on this device for offline use.</p>
+
+   <div class="docUploadGrid">
+     ${docUploadCard('PWD ID — Front','pwd-front')}
+     ${docUploadCard('PWD ID — Back','pwd-back')}
+     ${docUploadCard('Senior Citizen ID — Front','senior-front')}
+     ${docUploadCard('Senior Citizen ID — Back','senior-back')}
+     ${docUploadCard('Authorization Letter','authorization')}
+   </div>
+
+   <p class="note"><b>Accepted:</b> photo/image or PDF. These files stay on this device unless staff exports or downloads them.</p>
+ </section>`:`
+ <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
 
  if(screen==='pass')return pageHeader('Digital Passes')+(p?passCard(p):`
  <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
@@ -146,6 +161,46 @@ function results(){
   </div>`).join('');
 }
 
+function docUploadCard(label,slot){return `
+ <div class="docUploadCard">
+   <div class="docUploadTop"><b>${label}</b><span class="docStatus" data-doc-status="${slot}">CHECKING…</span></div>
+   <div class="docActions">
+     <label class="docUploadBtn">UPLOAD<input hidden class="docInput" data-slot="${slot}" type="file" accept="image/*,.pdf,application/pdf"></label>
+     <button class="docViewBtn" data-view-slot="${slot}" type="button">VIEW</button>
+     <button class="docDeleteBtn" data-delete-slot="${slot}" type="button">DELETE</button>
+   </div>
+   <small class="docFileName" data-doc-name="${slot}">No file saved</small>
+ </div>`}
+async function refreshDocStatuses(){
+ if(selected==null||!people[selected])return;
+ const p=people[selected];
+ const slots=['pwd-front','pwd-back','senior-front','senior-back','authorization'];
+ for(const slot of slots){
+   const rec=await getDoc(docKey(p,slot));
+   const st=document.querySelector('[data-doc-status="'+slot+'"]');
+   const nm=document.querySelector('[data-doc-name="'+slot+'"]');
+   const view=document.querySelector('[data-view-slot="'+slot+'"]');
+   const del=document.querySelector('[data-delete-slot="'+slot+'"]');
+   if(st){st.textContent=rec?'SAVED':'NOT SUBMITTED';st.classList.toggle('saved',!!rec)}
+   if(nm)nm.textContent=rec?rec.name:'No file saved';
+   if(view)view.disabled=!rec;
+   if(del)del.disabled=!rec;
+ }
+}
+async function viewDoc(slot){
+ if(selected==null)return;
+ const p=people[selected], rec=await getDoc(docKey(p,slot));
+ if(!rec)return;
+ const url=URL.createObjectURL(rec.blob);
+ window.open(url,'_blank');
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+async function removeDoc(slot){
+ if(selected==null)return;
+ if(!confirm('Delete this document from this device?'))return;
+ await deleteDoc(docKey(people[selected],slot));
+ await refreshDocStatuses();
+}
 function passSummary(p){return `<div class="passName">${esc(p.name)}</div><div class="passMeta">${esc(p.type)} • Pass #${esc(p.id)}</div>`}
 function passCard(p){return `
  <section class="panel pass">
@@ -164,6 +219,15 @@ function claimButtons(p){
 
 function wire(){
  const ex=document.getElementById('excel'); if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);
+ const openPass=document.getElementById('openPass'); if(openPass)openPass.onclick=()=>setScreen('pass');
+ document.querySelectorAll('.docInput').forEach(inp=>inp.onchange=async e=>{
+   const file=e.target.files?.[0]; if(!file||selected==null)return;
+   try{await putDoc(docKey(people[selected],e.target.dataset.slot),file);await refreshDocStatuses()}
+   catch{alert('Could not save this document on the device.')}
+ });
+ document.querySelectorAll('[data-view-slot]').forEach(b=>b.onclick=()=>viewDoc(b.dataset.viewSlot));
+ document.querySelectorAll('[data-delete-slot]').forEach(b=>b.onclick=()=>removeDoc(b.dataset.deleteSlot));
+ if(screen==='documents'&&selected!==null)setTimeout(refreshDocStatuses,0);
  const add=document.getElementById('addwalk'); if(add)add.onclick=()=>{
   const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;
   if(!n)return alert('Enter a name.');
