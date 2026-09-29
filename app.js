@@ -18,6 +18,20 @@ const normalize=a=>a.map((p,i)=>({
  docNotes:p.docNotes||''
 }));
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
+const ATTENDEE_NAME_RESET_KEY='pdw-attendee-name-reset-v34';
+if(localStorage.getItem(ATTENDEE_NAME_RESET_KEY)!=='done'){
+  people=[];
+  localStorage.setItem(K,'[]');
+  localStorage.removeItem(S);
+  localStorage.setItem('pdw-raffle-winners-v1','[]');
+  try{
+    const oldAudit=JSON.parse(localStorage.getItem('pdw-audit-v1')||'[]');
+    if(Array.isArray(oldAudit)){
+      localStorage.setItem('pdw-audit-v1',JSON.stringify(oldAudit.map(a=>({...a,passId:'',attendee:''}))));
+    }
+  }catch{}
+  localStorage.setItem(ATTENDEE_NAME_RESET_KEY,'done');
+}
 people.forEach(p=>{
  if(p.type==='Companion'){
    if(p.docVerify?.pwd==='Not Submitted')p.docVerify.pwd='Not Required';
@@ -334,7 +348,8 @@ function home(){
  return `
  <section class="offlineBox">
    <div class="offlineTitle">OFFLINE MODE</div>
-   <p>This event system is designed to operate from data stored on this device.<br>
+   <p><b>Attendee list is ready for a fresh upload.</b><br>
+   This event system is designed to operate from data stored on this device.<br>
    Participants receive Snack + Lunch + Raffle.<br>
    Companions receive Snack + Lunch only.</p>
  </section>
