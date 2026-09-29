@@ -406,3 +406,35 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .exportDocBtn:active{transform:scale(.98)}
 .exportDocBtn.exportAll{grid-column:1/-1;background:var(--green2);color:#fff}
 @media(max-width:620px){.docExportButtons{grid-template-columns:1fr}.exportDocBtn.exportAll{grid-column:auto}.exportDocBtn{min-height:68px;font-size:18px}}
+
+/* v22 — clearly mark the currently selected attendee */
+.personRow.selectedPerson{
+  background:#eef7ef!important;
+  border:3px solid var(--green2)!important;
+  border-radius:16px!important;
+  padding:16px!important;
+  margin:10px 0!important;
+  box-shadow:0 0 0 4px rgba(44,107,71,.10)!important;
+}
+.personNameLine{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.selectedTag,.selectedMini{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:max-content;
+  padding:5px 9px;
+  border-radius:999px;
+  background:var(--green2);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.3px;
+}
+.selectedMini{margin-top:8px}
+.selectedBtn{
+  background:#174c31!important;
+  color:#fff!important;
+  border:3px solid #c9a225!important;
+}
+@media(max-width:620px){
+  .selectedTag,.selectedMini{font-size:13px}
+  .personRow.selectedPerson{padding:14px!important}
+}
