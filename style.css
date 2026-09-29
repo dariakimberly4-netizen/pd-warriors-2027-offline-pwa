@@ -357,3 +357,22 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .claim{pointer-events:auto!important;cursor:pointer!important;user-select:none!important;-webkit-tap-highlight-color:rgba(0,0,0,.08)!important}
 .claim:disabled{pointer-events:auto!important;cursor:pointer!important;opacity:1!important}
 .claim.claimed{pointer-events:auto!important;cursor:pointer!important;opacity:1!important}
+
+/* v19 — robust clickable claim tiles with inline two-tap correction */
+.claim{
+  position:relative!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  touch-action:manipulation!important;
+  -webkit-user-select:none!important;
+  user-select:none!important;
+}
+.claim *{pointer-events:none!important}
+.claim:active{transform:scale(.97)!important}
+.claim.correctionMode{
+  background:#fff0d8!important;
+  color:#7a281f!important;
+  border:4px solid #c85b3f!important;
+  box-shadow:0 0 0 5px rgba(200,91,63,.18)!important;
+}
+.claim.correctionMode small{font-weight:900!important;color:#7a281f!important}
