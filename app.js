@@ -4,11 +4,34 @@ const defaultPeople=[
  {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
  {id:'C-0001',name:'Jose Santos',type:'Companion',snack:false,lunch:false,raffle:null}
 ];
-const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),attendance:!!p.attendance,attendanceAt:p.attendanceAt||'',snack:!!p.snack,snackAt:p.snackAt||'',lunch:!!p.lunch,lunchAt:p.lunchAt||'',raffle:p.type==='Companion'?null:!!p.raffle,raffleAt:p.type==='Companion'?'':(p.raffleAt||'')}));
+const normalize=a=>a.map((p,i)=>({
+ ...p,
+ id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),
+ linkedId:p.linkedId||'',
+ attendance:!!p.attendance,attendanceAt:p.attendanceAt||'',
+ snack:!!p.snack,snackAt:p.snackAt||'',
+ lunch:!!p.lunch,lunchAt:p.lunchAt||'',
+ raffle:p.type==='Companion'?null:!!p.raffle,raffleAt:p.type==='Companion'?'':(p.raffleAt||''),
+ docVerify:{
+   pwd:p.docVerify?.pwd||'Not Submitted',
+   senior:p.docVerify?.senior||'Not Submitted',
+   authorization:p.docVerify?.authorization||'Not Submitted'
+ },
+ docNotes:p.docNotes||''
+}));
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
+function ensureLinks(){
+ for(let i=0;i<people.length-1;i++){
+   const a=people[i],b=people[i+1];
+   if(!a.linkedId&&!b.linkedId&&a.type==='Participant'&&b.type==='Companion'){
+     a.linkedId=b.id;b.linkedId=a.id;
+   }
+ }
+}
+ensureLinks();
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null;
-const NEW_KEY='pdw-new-seen-v16';
+const NEW_KEY='pdw-new-seen-v20';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -29,6 +52,7 @@ function dataURLToBlob(dataURL){const [head,data]=dataURL.split(',');const mime=
 const modules=[
  ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
  ['database','DB','Attendee Database','Search imported names by first or last name'],
+ ['profile','NEW','Participant Profile','Summary, linked companion and document verification'],
  ['documents','2','Documents','Step 2 • Collect PWD / Senior ID / authorization'],
  ['pass','3','Digital Passes','Step 3 • Generate individual QR codes'],
  ['scanner','4','QR Scanner','Step 4 • Scan participant or companion QR'],
@@ -40,7 +64,7 @@ const modules=[
 
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 function setScreen(s){screen=s; pendingCorrection=null; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
-function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='documents';render();setTimeout(refreshDocStatuses,0)}
+function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='profile';render();setTimeout(refreshProfileDocs,0)}
 function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
 
 function shell(content){
@@ -70,9 +94,9 @@ function home(){
  <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard ${((id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='backup'?'backup':id==='claims'?'claims':''}">
+    <button class="moduleCard ${((id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${desc}</small></span>
+      <span class="moduleCopy"><strong>${title}${id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${desc}</small></span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -104,10 +128,56 @@ function body(){
    <div id="results">${results()}</div>
  </section>`;
 
+ if(screen==='profile')return pageHeader('Participant Profile')+(p?`
+ <section class="panel profilePanel">
+   <div class="profileHero">
+     <div>
+       <small>SELECTED ATTENDEE</small>
+       <h3>${esc(p.name)}</h3>
+       <span>${esc(p.type)} • Pass #${esc(p.id)}</span>
+     </div>
+     <span class="profileType">${p.type==='Participant'?'RAFFLE ELIGIBLE':'NO RAFFLE'}</span>
+   </div>
+
+   <div class="profileQuick">
+     <button id="profileDocs" class="primary">UPLOAD DOCUMENTS</button>
+     <button id="profilePass" class="softBtn">DIGITAL PASS</button>
+     <button id="profileClaims" class="softBtn">CLAIMS / CHECK-IN</button>
+   </div>
+
+   <div class="profileSection ${isNew('linking')?'newFeature':''}" id="linkedSection">
+     <div class="profileSectionTitle"><b>Linked Participant / Companion</b>${isNew('linking')?'<span class="newPill">NEW LINK</span>':''}</div>
+     ${linkedCard(p)}
+   </div>
+
+   <div class="profileSection ${isNew('verification')?'newFeature':''}" id="verifySection">
+     <div class="profileSectionTitle"><b>Document Verification</b>${isNew('verification')?'<span class="newPill">NEW VERIFICATION</span>':''}</div>
+     <div class="verifyGrid">
+       ${verifyRow('PWD ID','pwd',p)}
+       ${verifyRow('Senior Citizen ID','senior',p)}
+       ${verifyRow('Authorization Letter','authorization',p)}
+     </div>
+     <label class="notesLabel">Staff Notes
+       <textarea id="docNotes" class="notesBox" placeholder="Optional verification notes…">${esc(p.docNotes||'')}</textarea>
+     </label>
+   </div>
+
+   <div class="profileSection">
+     <div class="profileSectionTitle"><b>Attendance & Stub Summary</b></div>
+     <div class="summaryGrid">
+       ${summaryItem('Check-in',p.attendance,p.attendanceAt)}
+       ${summaryItem('Snack',p.snack,p.snackAt)}
+       ${summaryItem('Lunch',p.lunch,p.lunchAt)}
+       ${p.raffle===null?summaryText('Raffle','Not eligible'):summaryItem('Raffle',p.raffle,p.raffleAt)}
+     </div>
+   </div>
+ </section>`:`
+ <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
+
  if(screen==='documents')return pageHeader('Documents')+(p?`
  <section class="panel">
    <div class="selectedBanner">
-     <div><small>SELECTED ATTENDEE</small><b>${esc(p.name)}</b><span>${esc(p.type)} • Pass #${esc(p.id)}</span></div>
+     <div><small>SELECTED ATTENDEE</small><b>${esc(p.name)}</b><span>${esc(p.type)} • Pass #${esc(p.id)}${linkedPerson(p)?' • Linked: '+esc(linkedPerson(p).name):''}</span></div>
      <button id="openPass" class="primary">OPEN DIGITAL PASS</button>
    </div>
    <p class="lead">Upload the attendee's supporting documents. Files are stored locally on this device for offline use.</p>
@@ -213,6 +283,39 @@ function results(){
   </div>`).join('');
 }
 
+function linkedPerson(p){return p.linkedId?people.find(x=>x.id===p.linkedId):null}
+function linkedCard(p){
+ const l=linkedPerson(p);
+ if(!l)return '<div class="linkedEmpty">No linked participant/companion found.</div>';
+ return `<button type="button" class="linkedCard" data-linked-id="${esc(l.id)}">
+   <div><b>${esc(l.name)}</b><small>${esc(l.type)} • Pass #${esc(l.id)}</small></div>
+   <span>OPEN ›</span>
+ </button>`
+}
+function verifyRow(label,key,p){
+ const opts=['Not Submitted','Submitted','For Review','Verified','Rejected'];
+ return `<label class="verifyRow"><span>${label}</span>
+   <select class="verifySelect" data-verify="${key}">
+     ${opts.map(o=>`<option value="${o}" ${p.docVerify?.[key]===o?'selected':''}>${o}</option>`).join('')}
+   </select>
+ </label>`
+}
+function summaryItem(label,done,time){return `<div class="summaryItem ${done?'done':''}"><b>${label}</b><span>${done?'✓ Complete':'Pending'}</span>${done&&time?`<small>${formatTime(time)}</small>`:''}</div>`}
+function summaryText(label,text){return `<div class="summaryItem"><b>${label}</b><span>${text}</span></div>`}
+function docGroup(slot){return slot.startsWith('pwd-')?'pwd':slot.startsWith('senior-')?'senior':slot==='authorization'?'authorization':''}
+async function refreshProfileDocs(){
+ if(selected==null||!people[selected]||screen!=='profile')return;
+ const p=people[selected];
+ const groups={pwd:['pwd-front','pwd-back'],senior:['senior-front','senior-back'],authorization:['authorization']};
+ let changed=false;
+ for(const [g,slots] of Object.entries(groups)){
+   let has=false;
+   for(const s of slots){if(await getDoc(docKey(p,s))){has=true;break}}
+   if(has&&p.docVerify[g]==='Not Submitted'){p.docVerify[g]='Submitted';changed=true}
+   if(!has&&p.docVerify[g]==='Submitted'){p.docVerify[g]='Not Submitted';changed=true}
+ }
+ if(changed){save();render()}
+}
 function docUploadCard(label,slot){return `
  <div class="docUploadCard">
    <div class="docUploadTop"><b>${label}</b><span class="docStatus" data-doc-status="${slot}">CHECKING…</span></div>
@@ -254,6 +357,14 @@ async function removeDoc(slot){
  if(selected==null)return;
  if(!confirm('Delete this document from this device?'))return;
  await deleteDoc(docKey(people[selected],slot));
+ const g=docGroup(slot);
+ if(g){
+   const p=people[selected];
+   const related=g==='pwd'?['pwd-front','pwd-back']:g==='senior'?['senior-front','senior-back']:['authorization'];
+   let remains=false;for(const s of related){if(await getDoc(docKey(p,s))){remains=true;break}}
+   if(!remains)p.docVerify[g]='Not Submitted';
+   save();
+ }
  await refreshDocStatuses();
 }
 function passSummary(p){return `<div class="passName">${esc(p.name)}</div><div class="passMeta">${esc(p.type)} • Pass #${esc(p.id)}</div>`}
@@ -282,9 +393,30 @@ function claimButtons(p){
 function wire(){
  const ex=document.getElementById('excel'); if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);
  const openPass=document.getElementById('openPass'); if(openPass)openPass.onclick=()=>setScreen('pass');
+ const profileDocs=document.getElementById('profileDocs'); if(profileDocs)profileDocs.onclick=()=>setScreen('documents');
+ const profilePass=document.getElementById('profilePass'); if(profilePass)profilePass.onclick=()=>setScreen('pass');
+ const profileClaims=document.getElementById('profileClaims'); if(profileClaims)profileClaims.onclick=()=>setScreen('claims');
+ const linkedBtn=document.querySelector('.linkedCard'); if(linkedBtn)linkedBtn.onclick=()=>{
+   const i=people.findIndex(x=>x.id===linkedBtn.dataset.linkedId);
+   if(i>=0){markSeen('linking');selected=i;localStorage.setItem(S,String(i));screen='profile';render();setTimeout(refreshProfileDocs,0)}
+ };
+ document.querySelectorAll('.verifySelect').forEach(sel=>sel.onchange=e=>{
+   if(selected==null)return;
+   people[selected].docVerify[e.target.dataset.verify]=e.target.value;
+   markSeen('verification');save();render();
+ });
+ const notes=document.getElementById('docNotes'); if(notes)notes.onchange=e=>{if(selected==null)return;people[selected].docNotes=e.target.value;save()};
  document.querySelectorAll('.docInput').forEach(inp=>inp.onchange=async e=>{
    const file=e.target.files?.[0]; if(!file||selected==null)return;
-   try{await putDoc(docKey(people[selected],e.target.dataset.slot),file);await refreshDocStatuses()}
+   try{
+   const slot=e.target.dataset.slot;
+   await putDoc(docKey(people[selected],slot),file);
+   const g=docGroup(slot);
+   if(g&&people[selected].docVerify[g]==='Not Submitted')people[selected].docVerify[g]='Submitted';
+   save();
+   await refreshDocStatuses();
+   if(screen==='profile')render();
+ }
    catch{alert('Could not save this document on the device.')}
  });
  document.querySelectorAll('[data-view-slot]').forEach(b=>b.onclick=()=>viewDoc(b.dataset.viewSlot));
@@ -294,7 +426,7 @@ function wire(){
   const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;
   if(!n)return alert('Enter a name.');
   const count=people.filter(x=>x.type===t).length+1;
-  people.push({id:passId(t,count),name:n,type:t,attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:''});
+  people.push({id:passId(t,count),name:n,type:t,linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''});
   save();alert('Walk-in saved offline.');render()
  };
  const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
@@ -346,16 +478,19 @@ async function importExcel(file){
   const a=[];let pn=0,cn=0;
   m.slice(hi+1).forEach(r=>{
    const pnme=String(r[pc]||'').trim(),cnme=cc>=0?String(r[cc]||'').trim():'';
-   if(pnme){pn++;a.push({id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:''})}
-   if(cnme){cn++;a.push({id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:null,raffleAt:''})}
+   let pObj=null,cObj=null;
+   if(pnme){pn++;pObj={id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''}}
+   if(cnme){cn++;cObj={id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:null,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''}}
+   if(pObj&&cObj){pObj.linkedId=cObj.id;cObj.linkedId=pObj.id}
+   if(pObj)a.push(pObj);if(cObj)a.push(cObj)
   });
   if(!a.length)return alert('No participant names found below the header.');
-  people=a;selected=null;save();localStorage.removeItem(S);alert(a.length+' people imported and saved offline.');render()
+  people=normalize(a);ensureLinks();selected=null;save();localStorage.removeItem(S);alert(a.length+' people imported and linked offline.');render()
  }catch(e){alert('Could not read this Excel file.')}
 }
 
 function exportCsv(){
- const rows=[['Pass ID','Name','Type','Attendance','Check-in Time','Snack','Snack Time','Lunch','Lunch Time','Raffle','Raffle Time'],...people.map(p=>[p.id,p.name,p.type,p.attendance?'Checked in':'Not checked in',p.attendanceAt?formatTime(p.attendanceAt):'',p.snack?'Claimed':'Not claimed',p.snackAt?formatTime(p.snackAt):'',p.lunch?'Claimed':'Not claimed',p.lunchAt?formatTime(p.lunchAt):'',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed',p.raffleAt?formatTime(p.raffleAt):''])];
+ const rows=[['Pass ID','Name','Type','Linked Pass','Linked Name','PWD Verification','Senior ID Verification','Authorization Verification','Verification Notes','Attendance','Check-in Time','Snack','Snack Time','Lunch','Lunch Time','Raffle','Raffle Time'],...people.map(p=>{const l=linkedPerson(p);return[p.id,p.name,p.type,p.linkedId||'',l?.name||'',p.docVerify?.pwd||'Not Submitted',p.docVerify?.senior||'Not Submitted',p.docVerify?.authorization||'Not Submitted',p.docNotes||'',p.attendance?'Checked in':'Not checked in',p.attendanceAt?formatTime(p.attendanceAt):'',p.snack?'Claimed':'Not claimed',p.snackAt?formatTime(p.snackAt):'',p.lunch?'Claimed':'Not claimed',p.lunchAt?formatTime(p.lunchAt):'',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed',p.raffleAt?formatTime(p.raffleAt):'']})];
  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_Attendees_Claims.csv';a.click();URL.revokeObjectURL(a.href)
 }
@@ -376,7 +511,7 @@ async function restoreEventData(file){
   const data=JSON.parse(await file.text());
   if(!Array.isArray(data.people))throw Error('Invalid backup');
   if(!confirm('Restore this backup and replace the current event data on this device?'))return;
-  people=normalize(data.people);selected=(Number.isInteger(data.selected)&&people[data.selected])?data.selected:null;save();
+  people=normalize(data.people);ensureLinks();selected=(Number.isInteger(data.selected)&&people[data.selected])?data.selected:null;save();
   if(selected===null)localStorage.removeItem(S);else localStorage.setItem(S,String(selected));
   await clearDocs();
   for(const d of (data.documents||[])){
