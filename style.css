@@ -324,3 +324,21 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
   .newFeatureNotice span{font-size:17px}
   .newPill{display:block!important;width:max-content;margin:7px 0 0!important}
 }
+
+/* v15 — Check-in stays highlighted until the attendee is actually checked in */
+.checkinHighlight{
+  background:#fff0a8!important;
+  border:4px solid #c9a225!important;
+  color:#173b2a!important;
+  box-shadow:0 0 0 6px rgba(201,162,37,.25),0 10px 24px rgba(122,91,0,.18)!important;
+}
+.checkinHighlight span{font-weight:900!important}
+.checkinHighlight:after{
+  content:''!important;
+  position:absolute!important;
+  inset:-7px!important;
+  border:3px solid #c9a225!important;
+  border-radius:inherit!important;
+  pointer-events:none!important;
+  animation:newPulseStrong 1.2s ease-in-out infinite!important;
+}
