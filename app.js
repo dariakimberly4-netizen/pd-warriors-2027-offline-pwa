@@ -336,11 +336,16 @@ function body(){
      <button id="csv" class="primary full">DOWNLOAD STATUS CSV</button>
    </div>
 
-   <div class="exportBlock exportFilesBlock">
-     <b>Actual Uploaded Documents</b>
-     <span>Creates one ZIP file with folders for each attendee and their saved PWD ID, Senior Citizen ID and Authorization Letter files.</span>
-     <button id="exportDocsZip" class="primary full">EXPORT DOCUMENT FILES (.ZIP)</button>
-     <small id="exportDocsStatus">Files are exported directly from this device.</small>
+   <div class="exportBlock exportFilesBlock ${isNew('doc-export')?'newFeature':''}">
+     <div class="profileSectionTitle"><b>Actual Uploaded Documents</b>${isNew('doc-export')?'<span class="newPill">NEW DOWNLOADS</span>':''}</div>
+     <span>Download uploaded files by document type or download everything together.</span>
+     <div class="docExportButtons">
+       <button type="button" class="exportDocBtn" data-export-docs="pwd">DOWNLOAD ALL PWD FILES</button>
+       <button type="button" class="exportDocBtn" data-export-docs="senior">DOWNLOAD ALL SENIOR ID FILES</button>
+       <button type="button" class="exportDocBtn" data-export-docs="authorization">DOWNLOAD ALL AUTHORIZATION LETTERS</button>
+       <button type="button" class="exportDocBtn exportAll" data-export-docs="all">DOWNLOAD ALL DOCUMENTS</button>
+     </div>
+     <small>ZIP files are created directly from documents stored on this device.</small>
    </div>
 
    <p class="note"><b>Offline:</b> once this version has loaded and cached, the ZIP export works from the documents already stored on this device.</p>
