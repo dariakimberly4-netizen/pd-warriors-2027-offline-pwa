@@ -241,3 +241,21 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .selectedBanner small,.selectedBanner span{display:block}.selectedBanner small{font-size:13px;letter-spacing:1px;font-weight:900;color:#67736b}.selectedBanner b{display:block;font-size:26px;margin:4px 0}.selectedBanner span{font-size:17px;color:#59665e}
 .docUploadGrid{display:grid;gap:14px;margin-top:18px}.docUploadCard{border:1px solid #cfd8d0;border-radius:18px;padding:16px;background:#fff}.docUploadTop{display:flex;justify-content:space-between;align-items:center;gap:12px}.docUploadTop b{font-size:20px}.docStatus{font-size:12px;font-weight:900;padding:7px 10px;border-radius:999px;background:#f3eee0;color:#725f22;white-space:nowrap}.docStatus.saved{background:#e7f3e9;color:#1e6b3a}.docActions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 8px}.docUploadBtn,.docViewBtn,.docDeleteBtn{min-height:50px;border-radius:12px;padding:0 16px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.docUploadBtn{background:var(--green2);color:#fff}.docViewBtn{border:1px solid var(--green2);background:#eef6ef;color:var(--green)}.docDeleteBtn{border:1px solid #a74a4a;background:#fff4f4;color:#8c2c2c}.docViewBtn:disabled,.docDeleteBtn:disabled{opacity:.45;cursor:not-allowed}.docFileName{display:block;color:#647169;word-break:break-word}
 @media(max-width:620px){.selectedBanner{align-items:stretch;flex-direction:column}.selectedBanner .primary{width:100%}.docUploadTop{align-items:flex-start;flex-direction:column}.docActions{display:grid;grid-template-columns:1fr 1fr}.docUploadBtn{grid-column:1/-1}.docUploadBtn,.docViewBtn,.docDeleteBtn{width:100%}}
+
+/* v11 — quick PWD/Senior uploads on Claims screen */
+.claimDocs{margin-top:22px;padding:18px;border:2px solid #d5ddcf;border-radius:18px;background:#fffdf6}
+.claimDocs h3{margin:0 0 8px;font-size:22px;color:var(--green)}
+.claimDocButtons{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.claimDocUpload{min-height:88px;border:2px solid var(--green2);border-radius:16px;background:#eef6ef;color:var(--green);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:12px;font-weight:900;cursor:pointer;text-align:center}
+.claimDocUpload>span{font-size:18px}
+.claimDocUpload .docStatus{font-size:11px}
+.claimDocNames{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.claimDocNames small{color:#59665e;word-break:break-word;line-height:1.4}
+.claimDivider{height:1px;background:#dfe3dc;margin:22px 0}
+@media(max-width:620px){
+ .claimDocs{padding:16px}
+ .claimDocButtons{grid-template-columns:1fr}
+ .claimDocNames{grid-template-columns:1fr}
+ .claimDocUpload{min-height:92px}
+ .claimDocUpload>span{font-size:20px}
+}
