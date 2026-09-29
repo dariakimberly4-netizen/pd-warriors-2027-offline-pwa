@@ -1,0 +1,38 @@
+name: Localize offline assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/localize-assets.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  vendor-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download local offline assets
+        run: |
+          set -e
+          mkdir -p vendor assets
+          curl -fL --retry 3 "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" -o vendor/xlsx.full.min.js
+          curl -fL --retry 3 "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" -o vendor/qrcode.min.js
+          curl -fL --retry 3 "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" -o vendor/jszip.min.js
+          curl -fL --retry 3 "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" -o vendor/html5-qrcode.min.js
+          curl -fL --retry 3 "https://e6f82797-63ce-4bab-a068-36498212aea2.sandbox.floot.app/_cdn/static/17d6c48c-4486-4966-82fa-9ac8c81f53ed-pd-warriors-logo.jpg" -o assets/pdw-logo.jpg
+
+      - name: Commit vendored assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor assets
+          if git diff --cached --quiet; then
+            echo "No asset changes."
+          else
+            git commit -m "Vendor offline libraries and PD Warriors logo"
+            git push
+          fi
