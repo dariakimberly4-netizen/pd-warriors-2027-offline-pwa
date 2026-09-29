@@ -31,11 +31,12 @@ function ensureLinks(){
 ensureLinks();
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null;
-const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', STAFF_PIN='2027';
-let currentStaff=null, staffNames=[], auditLog=[];
+const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', STAFF_PIN='2027';
+let currentStaff=null, staffNames=[], auditLog=[], raffleWinners=[];
 try{currentStaff=JSON.parse(sessionStorage.getItem(STAFF_SESSION)||'null')}catch{}
 try{staffNames=JSON.parse(localStorage.getItem(STAFF_NAMES)||'[]')}catch{}
 try{auditLog=JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]')}catch{}
+try{raffleWinners=JSON.parse(localStorage.getItem(RAFFLE_WINNERS_KEY)||'[]')}catch{}
 function addAudit(action,person=null,detail=''){
  if(!currentStaff)return;
  auditLog.unshift({
@@ -49,7 +50,7 @@ function addAudit(action,person=null,detail=''){
  if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
 }
-const NEW_KEY='pdw-new-seen-v23';
+const NEW_KEY='pdw-new-seen-v24';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -136,6 +137,29 @@ async function exportDocumentFiles(group){
    markSeen('doc-export');
  }catch(e){alert('Could not create the document ZIP file.')}
 }
+function hasWonRaffle(p){return raffleWinners.some(w=>w.id===p.id)}
+function raffleEligible(p){return p.type==='Participant'&&p.attendance===true&&p.raffle===true&&!hasWonRaffle(p)}
+function eventStats(){
+ const participants=people.filter(p=>p.type==='Participant');
+ const companions=people.filter(p=>p.type==='Companion');
+ const docsSubmitted=people.reduce((n,p)=>n+['pwd','senior','authorization'].filter(k=>(p.docVerify?.[k]||'Not Submitted')!=='Not Submitted').length,0);
+ const docsVerified=people.reduce((n,p)=>n+['pwd','senior','authorization'].filter(k=>p.docVerify?.[k]==='Verified').length,0);
+ return {
+   total:people.length,
+   participants:participants.length,
+   companions:companions.length,
+   checkedIn:people.filter(p=>p.attendance).length,
+   snack:people.filter(p=>p.snack).length,
+   lunch:people.filter(p=>p.lunch).length,
+   raffleClaimed:participants.filter(p=>p.raffle).length,
+   raffleEligible:participants.filter(raffleEligible).length,
+   winners:raffleWinners.length,
+   docsSubmitted,
+   docsVerified
+ }
+}
+function statCard(label,value,note=''){return `<div class="reportStat"><b>${value}</b><span>${label}</span>${note?`<small>${note}</small>`:''}</div>`}
+
 const modules=[
  ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
  ['database','DB','Attendee Database','Search imported names by first or last name'],
@@ -146,6 +170,7 @@ const modules=[
  ['claims','5','Claims','Step 5 • Check-in + Snack + Lunch + Raffle claims'],
  ['raffle','DRAW','Raffle Draw','Draw a winner from eligible participants only'],
  ['export','DOC','Export Documents','Export document and claim status offline'],
+ ['report','RPT','End-of-Event Report','Live totals for attendance, claims, documents and raffle'],
  ['backup','SAFE','Backup / Restore','Save or restore all offline event data'],
  ['audit','LOG','Staff Activity','Offline audit trail of staff actions']
 ];
@@ -203,9 +228,9 @@ function home(){
  <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard ${((id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
+    <button class="moduleCard ${((id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
+      <span class="moduleCopy"><strong>${title}${id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -369,12 +394,51 @@ function body(){
    <p class="note">If camera QR detection is unavailable, search the attendee name manually.</p>
  </section>`;
 
- if(screen==='raffle')return pageHeader('Raffle Draw')+`
- <section class="panel">
-   <p class="lead">Eligible pool: <b>${people.filter(x=>x.type==='Participant').length} participants</b>. Companions are excluded.</p>
-   <button id="draw" class="danger full">DRAW WINNER</button>
+ if(screen==='raffle'){
+ const pool=people.filter(raffleEligible);
+ return pageHeader('Raffle Draw')+`
+ <section class="panel rafflePanel">
+   <div class="raffleRules">
+     <b>SAFE RAFFLE RULES</b>
+     <span>Only participants who are checked in, have claimed their raffle stub, and have not already won are included. Companions are always excluded.</span>
+   </div>
+   <div class="raffleCount"><b>${pool.length}</b><span>Eligible participants remaining</span></div>
+   <button id="draw" class="danger full" ${pool.length?'':'disabled'}>${pool.length?'DRAW WINNER':'NO ELIGIBLE PARTICIPANTS'}</button>
    ${winner?`<div class="winner">${esc(winner)}</div>`:''}
+   <div class="winnerHistory">
+     <div class="profileSectionTitle"><b>Winner History</b><span class="winnerCount">${raffleWinners.length}</span></div>
+     ${raffleWinners.length?raffleWinners.map((w,i)=>`
+       <div class="winnerRow">
+         <div><b>#${i+1} ${esc(w.name)}</b><span>${esc(w.id)}</span></div>
+         <small>${formatTime(w.at)}${w.staff?' • '+esc(w.staff):''}</small>
+       </div>`).join(''):'<div class="empty">No raffle winners yet.</div>'}
+   </div>
  </section>`;
+ }
+
+ if(screen==='report'){
+ const s=eventStats();
+ return pageHeader('End-of-Event Report')+`
+ <section class="panel reportPanel">
+   <p class="lead">Live totals from the records currently stored on this device.</p>
+   <div class="reportGrid">
+     ${statCard('Registered',s.total,s.participants+' participants • '+s.companions+' companions')}
+     ${statCard('Checked In',s.checkedIn)}
+     ${statCard('Snack Claimed',s.snack)}
+     ${statCard('Lunch Claimed',s.lunch)}
+     ${statCard('Raffle Claimed',s.raffleClaimed)}
+     ${statCard('Raffle Eligible Now',s.raffleEligible)}
+     ${statCard('Raffle Winners',s.winners)}
+     ${statCard('Documents Submitted',s.docsSubmitted)}
+     ${statCard('Documents Verified',s.docsVerified)}
+   </div>
+   <div class="reportActions">
+     <button id="reportCsv" class="primary">DOWNLOAD EVENT REPORT CSV</button>
+     <button id="reportStatusCsv" class="softBtn">DOWNLOAD ATTENDEE STATUS CSV</button>
+   </div>
+   <p class="note">Totals update immediately whenever check-in, claims, verification, or raffle results change on this device.</p>
+ </section>`;
+ }
 
  if(screen==='export')return pageHeader('Export Documents')+`
  <section class="panel exportPanel">
@@ -650,8 +714,20 @@ function wire(){
    if(isNew('timestamps'))markSeen('timestamps');
    save(); render();
  },true);
- const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';addAudit('Raffle draw',null,winner);render()};
+ const d=document.getElementById('draw'); if(d)d.onclick=()=>{
+   const pool=people.filter(raffleEligible);
+   if(!pool.length)return;
+   const picked=pool[Math.floor(Math.random()*pool.length)];
+   const record={id:picked.id,name:picked.name,at:new Date().toISOString(),staff:currentStaff?.name||''};
+   raffleWinners.push(record);
+   localStorage.setItem(RAFFLE_WINNERS_KEY,JSON.stringify(raffleWinners));
+   winner=picked.name;
+   addAudit('Raffle winner drawn',picked,'Winner #'+raffleWinners.length);
+   render();
+ };
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
+ const reportCsv=document.getElementById('reportCsv'); if(reportCsv)reportCsv.onclick=exportEventReportCsv;
+ const reportStatusCsv=document.getElementById('reportStatusCsv'); if(reportStatusCsv)reportStatusCsv.onclick=exportCsv;
  document.querySelectorAll('[data-export-docs]').forEach(b=>b.onclick=()=>exportDocumentFiles(b.dataset.exportDocs));
  const zipBtn=document.getElementById('exportDocsZip'); if(zipBtn)zipBtn.onclick=exportDocumentFiles;
  const auditCsv=document.getElementById('auditCsv'); if(auditCsv)auditCsv.onclick=exportAuditCsv;
@@ -685,6 +761,32 @@ async function importExcel(file){
  }catch(e){alert('Could not read this Excel file.')}
 }
 
+function exportEventReportCsv(){
+ const s=eventStats();
+ const rows=[
+   ['PD Warriors Philippines Get Together 2027','End-of-Event Report'],
+   ['Generated',new Date().toISOString()],
+   ['Metric','Total'],
+   ['Registered',s.total],
+   ['Participants',s.participants],
+   ['Companions',s.companions],
+   ['Checked In',s.checkedIn],
+   ['Snack Claimed',s.snack],
+   ['Lunch Claimed',s.lunch],
+   ['Raffle Claimed',s.raffleClaimed],
+   ['Raffle Eligible Now',s.raffleEligible],
+   ['Raffle Winners',s.winners],
+   ['Documents Submitted',s.docsSubmitted],
+   ['Documents Verified',s.docsVerified],
+   [],
+   ['Raffle Winner History'],
+   ['Pass ID','Name','Draw Time','Staff'],
+   ...raffleWinners.map(w=>[w.id,w.name,w.at,w.staff])
+ ];
+ const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_End_of_Event_Report.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ addAudit('Downloaded end-of-event report');
+}
 function exportCsv(){
  const rows=[['Pass ID','Name','Type','Linked Pass','Linked Name','PWD Verification','Senior ID Verification','Authorization Verification','Verification Notes','Attendance','Check-in Time','Snack','Snack Time','Lunch','Lunch Time','Raffle','Raffle Time'],...people.map(p=>{const l=linkedPerson(p);return[p.id,p.name,p.type,p.linkedId||'',l?.name||'',p.docVerify?.pwd||'Not Submitted',p.docVerify?.senior||'Not Submitted',p.docVerify?.authorization||'Not Submitted',p.docNotes||'',p.attendance?'Checked in':'Not checked in',p.attendanceAt?formatTime(p.attendanceAt):'',p.snack?'Claimed':'Not claimed',p.snackAt?formatTime(p.snackAt):'',p.lunch?'Claimed':'Not claimed',p.lunchAt?formatTime(p.lunchAt):'',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed',p.raffleAt?formatTime(p.raffleAt):'']})];
  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -803,7 +905,7 @@ async function backupEventData(){
   for(const d of docs){
    packedDocs.push({key:d.key,name:d.value.name,type:d.value.type,size:d.value.size,updated:d.value.updated,data:await blobToDataURL(d.value.blob)});
   }
-  const payload={version:1,event:'PDWPH-GET-TOGETHER-2027',exportedAt:new Date().toISOString(),people,selected,documents:packedDocs};
+  const payload={version:2,event:'PDWPH-GET-TOGETHER-2027',exportedAt:new Date().toISOString(),people,selected,raffleWinners,auditLog,documents:packedDocs};
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:'application/json'}));a.download='PDW_2027_OFFLINE_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  }catch{alert('Could not create the backup file.')}
 }
@@ -812,7 +914,12 @@ async function restoreEventData(file){
   const data=JSON.parse(await file.text());
   if(!Array.isArray(data.people))throw Error('Invalid backup');
   if(!confirm('Restore this backup and replace the current event data on this device?'))return;
-  people=normalize(data.people);ensureLinks();selected=(Number.isInteger(data.selected)&&people[data.selected])?data.selected:null;save();
+  people=normalize(data.people);ensureLinks();selected=(Number.isInteger(data.selected)&&people[data.selected])?data.selected:null;
+  raffleWinners=Array.isArray(data.raffleWinners)?data.raffleWinners:[];
+  auditLog=Array.isArray(data.auditLog)?data.auditLog:auditLog;
+  localStorage.setItem(RAFFLE_WINNERS_KEY,JSON.stringify(raffleWinners));
+  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
+  save();
   if(selected===null)localStorage.removeItem(S);else localStorage.setItem(S,String(selected));
   await clearDocs();
   for(const d of (data.documents||[])){
