@@ -270,10 +270,11 @@ function claimButtons(p){
  return `<div class="claims">${ks.map(k=>{
    const label=k==='attendance'?'CHECK-IN':k.toUpperCase();
    const done=!!p[k], t=p[k+'At']||'';
-   return `<button class="claim ${done?'claimed':''} ${k==='attendance'&&isNew('attendance')?'newFeature':''}" data-k="${k}" data-new-id="${k==='attendance'?'attendance':''}" ${done?'disabled':''}>
-     <span>${label}${k==='attendance'&&isNew('attendance')?'<b class="newPill claimNew">NEW FEATURE</b>':''}</span>
+   const highlight=k==='attendance'&&!done;
+   return `<button type="button" class="claim ${done?'claimed':''} ${highlight?'newFeature checkinHighlight':''}" data-k="${k}" aria-pressed="${done?'true':'false'}">
+     <span>${label}${highlight?'<b class="newPill claimNew">NEW FEATURE</b>':''}</span>
      <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED')+' • TAP TO CORRECT':'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
-     ${done&&t?`<em>${formatTime(t)}${isNew('timestamps')?'<b class="timeNew"> NEW TIMESTAMP</b>':''}</em>`:''}
+     ${done&&t?`<em>${formatTime(t)}</em>`:''}
    </button>`
  }).join('')}</div>`;
 }
