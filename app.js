@@ -8,6 +8,11 @@ const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null;
+const NEW_KEY='pdw-new-seen-v12';
+let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
+function isNew(id){return !seenNew[id]}
+function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
+
 const save=()=>localStorage.setItem(K,JSON.stringify(people)); save();
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const app=document.getElementById('app');
@@ -64,9 +69,9 @@ function home(){
  </section>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard" data-screen="${id}">
+    <button class="moduleCard ${id==='backup'&&isNew('backup')?'newFeature':''}" data-screen="${id}" data-new-id="${id==='backup'?'backup':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}</strong><small>${desc}</small></span>
+      <span class="moduleCopy"><strong>${title}${id==='backup'&&isNew('backup')?'<span class="newPill">NEW</span>':''}</strong><small>${desc}</small></span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -189,7 +194,10 @@ function body(){
 
 function render(){
  app.innerHTML=shell(body());
- app.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>setScreen(b.dataset.screen));
+ app.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>{
+   if(b.dataset.newId){markSeen(b.dataset.newId)}
+   setScreen(b.dataset.screen)
+ });
  const back=document.getElementById('backHome'); if(back)back.onclick=()=>setScreen('home');
  wire();
 }
@@ -261,10 +269,10 @@ function claimButtons(p){
  return `<div class="claims">${ks.map(k=>{
    const label=k==='attendance'?'CHECK-IN':k.toUpperCase();
    const done=!!p[k], t=p[k+'At']||'';
-   return `<button class="claim ${done?'claimed':''}" data-k="${k}" ${done?'disabled':''}>
-     <span>${label}</span>
+   return `<button class="claim ${done?'claimed':''} ${k==='attendance'&&isNew('attendance')?'newFeature':''}" data-k="${k}" data-new-id="${k==='attendance'?'attendance':''}" ${done?'disabled':''}>
+     <span>${label}${k==='attendance'&&isNew('attendance')?'<b class="newPill claimNew">NEW</b>':''}</span>
      <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED'):'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
-     ${done&&t?`<em>${formatTime(t)}</em>`:''}
+     ${done&&t?`<em>${formatTime(t)}${isNew('timestamps')?'<b class="timeNew"> NEW TIMESTAMP</b>':''}</em>`:''}
    </button>`
  }).join('')}</div>`;
 }
@@ -296,7 +304,14 @@ function wire(){
   else el.textContent='QR library loading…';
  }
  const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
- document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(selected==null)return;people[selected][k]=true;people[selected][k+'At']=new Date().toISOString();save();render()});
+ document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{
+   const k=b.dataset.k;if(selected==null)return;
+   if(b.dataset.newId)markSeen(b.dataset.newId);
+   people[selected][k]=true;
+   people[selected][k+'At']=new Date().toISOString();
+   if(isNew('timestamps'))markSeen('timestamps');
+   save();render()
+ });
  const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
  const bk=document.getElementById('backupNow'); if(bk)bk.onclick=backupEventData;
