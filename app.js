@@ -1,5 +1,12 @@
 (()=> {
-const APP_VERSION='36';
+
+try{
+  const shortSide=Math.min(Number(screen.width)||9999,Number(screen.height)||9999);
+  if((navigator.maxTouchPoints||0)>0 && shortSide<=820){
+    document.documentElement.classList.add('phone-device');
+  }
+}catch{}
+const APP_VERSION='37';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[];
 const normalize=a=>a.map((p,i)=>({
