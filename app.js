@@ -307,7 +307,6 @@ function wire(){
  const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
  document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{
    const k=b.dataset.k;if(selected==null)return;
-   if(b.dataset.newId)markSeen(b.dataset.newId);
    people[selected][k]=true;
    people[selected][k+'At']=new Date().toISOString();
    if(isNew('timestamps'))markSeen('timestamps');
