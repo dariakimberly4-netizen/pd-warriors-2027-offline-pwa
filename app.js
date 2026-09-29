@@ -8,7 +8,7 @@ const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null;
-const NEW_KEY='pdw-new-seen-v12';
+const NEW_KEY='pdw-new-seen-v14';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -67,11 +67,12 @@ function home(){
    Participants receive Snack + Lunch + Raffle.<br>
    Companions receive Snack + Lunch only.</p>
  </section>
+ <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
     <button class="moduleCard ${id==='backup'&&isNew('backup')?'newFeature':''}" data-screen="${id}" data-new-id="${id==='backup'?'backup':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='backup'&&isNew('backup')?'<span class="newPill">NEW</span>':''}</strong><small>${desc}</small></span>
+      <span class="moduleCopy"><strong>${title}${id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':''}</strong><small>${desc}</small></span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -270,7 +271,7 @@ function claimButtons(p){
    const label=k==='attendance'?'CHECK-IN':k.toUpperCase();
    const done=!!p[k], t=p[k+'At']||'';
    return `<button class="claim ${done?'claimed':''} ${k==='attendance'&&isNew('attendance')?'newFeature':''}" data-k="${k}" data-new-id="${k==='attendance'?'attendance':''}" ${done?'disabled':''}>
-     <span>${label}${k==='attendance'&&isNew('attendance')?'<b class="newPill claimNew">NEW</b>':''}</span>
+     <span>${label}${k==='attendance'&&isNew('attendance')?'<b class="newPill claimNew">NEW FEATURE</b>':''}</span>
      <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED'):'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
      ${done&&t?`<em>${formatTime(t)}${isNew('timestamps')?'<b class="timeNew"> NEW TIMESTAMP</b>':''}</em>`:''}
    </button>`
