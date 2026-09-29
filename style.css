@@ -259,3 +259,8 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
  .claimDocUpload{min-height:92px}
  .claimDocUpload>span{font-size:20px}
 }
+
+/* v12 — attendance, timestamps, backup/restore */
+.claim em{display:block;margin-top:7px;font-size:12px;font-style:normal;opacity:.85}
+.restoreLabel{display:flex;align-items:center;justify-content:center;cursor:pointer}
+@media(max-width:620px){.claim em{font-size:13px}}
