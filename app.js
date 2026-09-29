@@ -1,10 +1,7 @@
 (()=> {
-const APP_VERSION='32';
+const APP_VERSION='34';
 const K='pdw-people-v4', S='pdw-selected-v4';
-const defaultPeople=[
- {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
- {id:'C-0001',name:'Jose Santos',type:'Companion',snack:false,lunch:false,raffle:null}
-];
+const defaultPeople=[];
 const normalize=a=>a.map((p,i)=>({
  ...p,
  id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),
@@ -45,6 +42,18 @@ try{currentStaff=JSON.parse(sessionStorage.getItem(STAFF_SESSION)||'null')}catch
 try{staffNames=JSON.parse(localStorage.getItem(STAFF_NAMES)||'[]')}catch{}
 try{auditLog=JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]')}catch{}
 try{raffleWinners=JSON.parse(localStorage.getItem(RAFFLE_WINNERS_KEY)||'[]')}catch{}
+const ATTENDEE_CLEAR_V34='pdw-attendee-clear-v34';
+if(localStorage.getItem(ATTENDEE_CLEAR_V34)!=='done'){
+  people=[];
+  selected=null;
+  raffleWinners=[];
+  auditLog=auditLog.map(a=>({...a,passId:'',attendee:''}));
+  localStorage.setItem(K,'[]');
+  localStorage.removeItem(S);
+  localStorage.setItem(RAFFLE_WINNERS_KEY,'[]');
+  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
+  localStorage.setItem(ATTENDEE_CLEAR_V34,'done');
+}
 function addAudit(action,person=null,detail=''){
  if(!currentStaff)return;
  auditLog.unshift({
@@ -58,7 +67,7 @@ function addAudit(action,person=null,detail=''){
  if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
 }
-const NEW_KEY='pdw-new-seen-v32';
+const NEW_KEY='pdw-new-seen-v34';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
