@@ -398,3 +398,11 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .exportFilesBlock{border-color:#c9a225;background:#fffdf3}
 .exportFilesBlock>small{color:#6b6f68;line-height:1.4}
 #exportDocsZip:disabled{opacity:.7;cursor:wait}
+
+/* v21 — actual document file ZIP exports */
+.docExportBox{position:relative;border:2px solid #d4ddd5;border-radius:18px;padding:18px;background:#fffdf7}
+.docExportButtons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.exportDocBtn{min-height:64px;border:2px solid var(--green2);border-radius:15px;background:#eef6ef;color:var(--green);font-weight:900;padding:10px 14px;cursor:pointer;touch-action:manipulation}
+.exportDocBtn:active{transform:scale(.98)}
+.exportDocBtn.exportAll{grid-column:1/-1;background:var(--green2);color:#fff}
+@media(max-width:620px){.docExportButtons{grid-template-columns:1fr}.exportDocBtn.exportAll{grid-column:auto}.exportDocBtn{min-height:68px;font-size:18px}}
