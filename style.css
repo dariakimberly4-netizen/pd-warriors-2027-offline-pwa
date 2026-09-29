@@ -342,3 +342,7 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
   pointer-events:none!important;
   animation:newPulseStrong 1.2s ease-in-out infinite!important;
 }
+
+/* v16 — expose Check-in location from Home */
+.moduleCard.newFeature .moduleCopy strong{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@media(max-width:620px){.moduleCard.newFeature .moduleCopy strong{align-items:flex-start}}
