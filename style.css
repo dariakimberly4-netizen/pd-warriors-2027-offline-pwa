@@ -438,3 +438,40 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
   .selectedTag,.selectedMini{font-size:13px}
   .personRow.selectedPerson{padding:14px!important}
 }
+
+/* v22 — visibly confirm attendee selection before moving to the next step */
+.personRow.isSelected{
+  border:3px solid var(--green2)!important;
+  background:#edf7ef!important;
+  box-shadow:0 0 0 4px rgba(36,92,59,.10)!important;
+}
+.selectedBtn{
+  min-height:52px;
+  border:2px solid var(--green2);
+  border-radius:12px;
+  padding:0 16px;
+  background:#dceee0;
+  color:var(--green);
+  font-weight:900;
+  cursor:pointer;
+}
+.selectedProceed{
+  margin-top:18px;
+  padding:18px;
+  border:3px solid var(--green2);
+  border-radius:18px;
+  background:#f1f8f2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.selectedProceed small,.selectedProceed span{display:block}
+.selectedProceed small{font-size:12px;letter-spacing:1px;font-weight:900;color:#69756d}
+.selectedProceed b{display:block;font-size:24px;color:var(--green);margin:4px 0}
+.selectedProceed span{font-size:15px;color:#5c675f}
+.selectedProceed .primary{min-height:60px;white-space:nowrap}
+@media(max-width:620px){
+  .selectedProceed{flex-direction:column;align-items:stretch}
+  .selectedProceed .primary{width:100%;font-size:18px}
+}
