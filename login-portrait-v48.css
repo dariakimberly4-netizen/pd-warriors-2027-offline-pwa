@@ -1,0 +1,207 @@
+/* v48 — portrait-proportional mobile login
+   Preserves the proven v45 mobile canvas scale. Only the login card is redesigned. */
+
+html.phone-device .staffLoginPanel.loginPortrait{
+  width:80%!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:2px solid #2d6b49!important;
+  border-radius:18px!important;
+  background:#fffdf8!important;
+  box-shadow:0 10px 28px rgba(35,78,53,.12)!important;
+}
+
+html.phone-device .portraitAccent{
+  width:100%!important;
+  height:5px!important;
+  background:linear-gradient(90deg,#245c3b 0 72%,#c9a225 72% 100%)!important;
+}
+
+html.phone-device .portraitHead{
+  display:grid!important;
+  grid-template-columns:48px minmax(0,1fr)!important;
+  gap:11px!important;
+  align-items:center!important;
+  padding:18px 17px 14px!important;
+}
+
+html.phone-device .portraitIcon{
+  width:48px!important;
+  height:48px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:14px!important;
+  background:#245c3b!important;
+  color:#fff!important;
+  box-shadow:inset 0 0 0 2px #d8bc51!important;
+  font-family:Georgia,serif!important;
+  font-size:20px!important;
+  font-weight:800!important;
+}
+
+html.phone-device .portraitKicker{
+  display:block!important;
+  margin-bottom:3px!important;
+  color:#a47b12!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.9px!important;
+}
+
+html.phone-device .loginPortrait .portraitHead h2{
+  margin:0!important;
+  color:#245c3b!important;
+  font-family:Georgia,serif!important;
+  font-size:23px!important;
+  line-height:1.05!important;
+}
+
+html.phone-device .loginPortrait .portraitHead p{
+  margin:4px 0 0!important;
+  color:#657169!important;
+  font-size:10px!important;
+  font-weight:700!important;
+}
+
+html.phone-device .portraitStatus{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0 17px!important;
+  padding:9px 10px!important;
+  border:1px solid #d8e6dc!important;
+  border-radius:10px!important;
+  background:#f2f8f3!important;
+  color:#476151!important;
+  font-size:9px!important;
+  line-height:1.25!important;
+}
+
+html.phone-device .portraitStatus .offlineDot{
+  flex:0 0 auto!important;
+  width:8px!important;
+  height:8px!important;
+  border-radius:50%!important;
+  background:#2f7a50!important;
+  box-shadow:0 0 0 3px rgba(47,122,80,.12)!important;
+}
+
+html.phone-device .portraitForm{
+  padding:17px!important;
+}
+
+html.phone-device .portraitLabel{
+  display:block!important;
+  margin:0 0 13px!important;
+}
+
+html.phone-device .portraitLabel > span{
+  display:block!important;
+  margin:0 0 5px!important;
+  color:#245c3b!important;
+  font-size:10px!important;
+  font-weight:900!important;
+}
+
+html.phone-device .loginPortrait .field{
+  width:100%!important;
+  min-height:46px!important;
+  margin:0!important;
+  padding:0 12px!important;
+  border:1.5px solid #4d8064!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  color:#183c29!important;
+  font-size:12px!important;
+  box-shadow:none!important;
+}
+
+html.phone-device .loginPortrait .field:focus{
+  border-color:#c9a225!important;
+  box-shadow:0 0 0 3px rgba(201,162,37,.13)!important;
+}
+
+html.phone-device .portraitLoginBtn{
+  width:100%!important;
+  min-height:48px!important;
+  margin:3px 0 0!important;
+  border-radius:11px!important;
+  background:#245c3b!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  letter-spacing:.35px!important;
+}
+
+html.phone-device .loginPortrait .loginMsg{
+  min-height:8px!important;
+  margin:5px 0 0!important;
+  font-size:9px!important;
+}
+
+html.phone-device .portraitPin{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  margin:0!important;
+  padding:12px 17px!important;
+  border-top:1px solid #eee4cb!important;
+  background:#f8f3e7!important;
+}
+
+html.phone-device .portraitPin span{
+  color:#877239!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  letter-spacing:.8px!important;
+}
+
+html.phone-device .portraitPin strong{
+  min-width:54px!important;
+  padding:6px 10px!important;
+  border:1px solid #d7c16d!important;
+  border-radius:999px!important;
+  background:#fffaf0!important;
+  color:#705d20!important;
+  text-align:center!important;
+  font-size:11px!important;
+  letter-spacing:1px!important;
+}
+
+/* Small phones: still portrait, just slightly wider */
+@media (max-device-width:390px){
+  html.phone-device .staffLoginPanel.loginPortrait{
+    width:84%!important;
+  }
+}
+
+/* Desktop/tablet: proportional centered card, no mobile zoom assumptions */
+@media (pointer:fine){
+  .staffLoginPanel.loginPortrait{
+    width:min(100%,480px)!important;
+    margin:0 auto!important;
+    padding:0!important;
+    overflow:hidden!important;
+    border:2px solid #2d6b49!important;
+    border-radius:22px!important;
+    background:#fffdf8!important;
+    box-shadow:0 14px 36px rgba(35,78,53,.11)!important;
+  }
+  .portraitAccent{height:6px!important;background:linear-gradient(90deg,#245c3b 0 72%,#c9a225 72% 100%)!important}
+  .portraitHead{display:grid!important;grid-template-columns:64px minmax(0,1fr)!important;gap:16px!important;align-items:center!important;padding:26px 26px 19px!important}
+  .portraitIcon{width:64px!important;height:64px!important;display:grid!important;place-items:center!important;border-radius:18px!important;background:#245c3b!important;color:#fff!important;box-shadow:inset 0 0 0 3px #d8bc51!important;font-family:Georgia,serif!important;font-size:27px!important;font-weight:800!important}
+  .portraitKicker{display:block!important;margin-bottom:4px!important;color:#a47b12!important;font-size:11px!important;font-weight:900!important;letter-spacing:1.1px!important}
+  .loginPortrait .portraitHead h2{margin:0!important;color:#245c3b!important;font-family:Georgia,serif!important;font-size:32px!important}
+  .loginPortrait .portraitHead p{margin:5px 0 0!important;color:#657169!important;font-size:14px!important;font-weight:700!important}
+  .portraitStatus{display:flex!important;align-items:center!important;gap:9px!important;margin:0 26px!important;padding:11px 13px!important;border:1px solid #d8e6dc!important;border-radius:12px!important;background:#f2f8f3!important;color:#476151!important;font-size:12px!important}
+  .portraitStatus .offlineDot{width:9px!important;height:9px!important;border-radius:50%!important;background:#2f7a50!important}
+  .portraitForm{padding:22px 26px!important}
+  .portraitLabel{display:block!important;margin:0 0 17px!important}
+  .portraitLabel>span{display:block!important;margin-bottom:6px!important;color:#245c3b!important;font-size:13px!important;font-weight:900!important}
+  .loginPortrait .field{width:100%!important;min-height:54px!important;border:1.5px solid #4d8064!important;border-radius:13px!important;background:#fff!important;font-size:16px!important}
+  .portraitLoginBtn{width:100%!important;min-height:56px!important;border-radius:13px!important;font-size:14px!important}
+  .portraitPin{display:flex!important;align-items:center!important;justify-content:space-between!important;padding:15px 26px!important;border-top:1px solid #eee4cb!important;background:#f8f3e7!important}
+  .portraitPin span{color:#877239!important;font-size:11px!important;font-weight:900!important;letter-spacing:1px!important}
+  .portraitPin strong{min-width:72px!important;padding:7px 12px!important;border:1px solid #d7c16d!important;border-radius:999px!important;background:#fffaf0!important;color:#705d20!important;text-align:center!important;font-size:14px!important;letter-spacing:1.2px!important}
+}
