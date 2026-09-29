@@ -133,7 +133,7 @@ const modules=[
 
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 function setScreen(s){screen=s; pendingCorrection=null; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
-function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='profile';render();setTimeout(refreshProfileDocs,0)}
+function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='database';render()}
 function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
 
 function shell(content){
@@ -195,6 +195,15 @@ function body(){
    <p class="lead">Search by first name, last name, or any part of the attendee name.</p>
    <input id="search" class="field" value="${esc(query)}" placeholder="Search first name or last name…">
    <div id="results">${results()}</div>
+   ${selected!==null&&people[selected]?`
+     <div class="selectedProceed">
+       <div>
+         <small>SELECTED ATTENDEE</small>
+         <b>✓ ${esc(people[selected].name)}</b>
+         <span>${esc(people[selected].type)} • Pass #${esc(people[selected].id)}</span>
+       </div>
+       <button id="proceedSelected" class="primary">PROCEED TO NEXT STEP</button>
+     </div>`:''}
  </section>`;
 
  if(screen==='profile')return pageHeader('Participant Profile')+(p?`
@@ -536,6 +545,7 @@ function wire(){
  };
  const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
  bindSelect();
+ const proceedSelected=document.getElementById('proceedSelected'); if(proceedSelected)proceedSelected.onclick=()=>setScreen('profile');
  const p=selected==null?null:people[selected];
  if(p&&document.getElementById('qr')){
   const el=document.getElementById('qr');
