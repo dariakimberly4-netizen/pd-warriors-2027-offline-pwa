@@ -610,7 +610,10 @@ function results(){
       <div class="personNameLine"><b>${esc(p.name)}</b>${isSelected?'<span class="selectedTag">✓ SELECTED</span>':''}</div>
       <small>${esc(p.type)} • Pass ${esc(p.id)} • ${p.type==='Participant'?'Raffle eligible':'No raffle'}</small>
     </div>
-    <button class="primary select ${isSelected?'selectedBtn':''}" data-i="${i}">${isSelected?'OPEN SELECTED':'SELECT'}</button>
+    ${isSelected
+      ?`<button type="button" class="primary selectedBtn openSelected" data-i="${i}">OPEN SELECTED</button>`
+      :`<button type="button" class="primary select" data-i="${i}">SELECT</button>`}
+
   </div>`
  }).join('');
 }
@@ -854,7 +857,19 @@ function wire(){
  const rf=document.getElementById('restoreFile'); if(rf)rf.onchange=e=>e.target.files?.[0]&&restoreEventData(e.target.files[0]);
  const st=document.getElementById('startcam'); if(st)st.onclick=startScanner;
 }
-function bindSelect(){document.querySelectorAll('.select').forEach(b=>b.onclick=()=>selectPerson(Number(b.dataset.i)))}
+function bindSelect(){
+ document.querySelectorAll('.select').forEach(b=>b.onclick=()=>selectPerson(Number(b.dataset.i)));
+ document.querySelectorAll('.openSelected').forEach(b=>b.onclick=()=>{
+   const i=Number(b.dataset.i);
+   if(!Number.isInteger(i)||!people[i])return;
+   selected=i;
+   localStorage.setItem(S,String(i));
+   addAudit('Opened selected attendee',people[i]);
+   screen='profile';
+   render();
+   setTimeout(refreshProfileDocs,0);
+ });
+}
 
 async function importExcel(file){
  try{
@@ -867,8 +882,8 @@ async function importExcel(file){
   m.slice(hi+1).forEach(r=>{
    const pnme=String(r[pc]||'').trim(),cnme=cc>=0?String(r[cc]||'').trim():'';
    let pObj=null,cObj=null;
-   if(pnme){pn++;pObj={id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:'',docVerify:{pwd:'Not Required',senior:'Not Required',authorization:'Not Submitted'},docNotes:''}}
-   if(cnme){cn++;cObj={id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:null,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''}}
+   if(pnme){pn++;pObj={id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''}}
+   if(cnme){cn++;cObj={id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:null,raffleAt:'',docVerify:{pwd:'Not Required',senior:'Not Required',authorization:'Not Submitted'},docNotes:''}}
    if(pObj&&cObj){pObj.linkedId=cObj.id;cObj.linkedId=pObj.id}
    if(pObj)a.push(pObj);if(cObj)a.push(cObj)
   });
