@@ -13,13 +13,19 @@ const normalize=a=>a.map((p,i)=>({
  lunch:!!p.lunch,lunchAt:p.lunchAt||'',
  raffle:p.type==='Companion'?null:!!p.raffle,raffleAt:p.type==='Companion'?'':(p.raffleAt||''),
  docVerify:{
-   pwd:p.docVerify?.pwd||'Not Submitted',
-   senior:p.docVerify?.senior||'Not Submitted',
+   pwd:p.docVerify?.pwd||((p.type==='Companion')?'Not Required':'Not Submitted'),
+   senior:p.docVerify?.senior||((p.type==='Companion')?'Not Required':'Not Submitted'),
    authorization:p.docVerify?.authorization||'Not Submitted'
  },
  docNotes:p.docNotes||''
 }));
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
+people.forEach(p=>{
+ if(p.type==='Companion'){
+   if(p.docVerify?.pwd==='Not Submitted')p.docVerify.pwd='Not Required';
+   if(p.docVerify?.senior==='Not Submitted')p.docVerify.senior='Not Required';
+ }
+});
 function ensureLinks(){
  for(let i=0;i<people.length-1;i++){
    const a=people[i],b=people[i+1];
@@ -29,6 +35,7 @@ function ensureLinks(){
  }
 }
 ensureLinks();
+localStorage.setItem(K,JSON.stringify(people));
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null, readinessResults=null;
 const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', LAST_BACKUP_KEY='pdw-last-backup-v1', STAFF_PIN='2027';
@@ -50,7 +57,7 @@ function addAudit(action,person=null,detail=''){
  if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
 }
-const NEW_KEY='pdw-new-seen-v25';
+const NEW_KEY='pdw-new-seen-v26';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -142,7 +149,7 @@ function raffleEligible(p){return p.type==='Participant'&&p.attendance===true&&p
 function eventStats(){
  const participants=people.filter(p=>p.type==='Participant');
  const companions=people.filter(p=>p.type==='Companion');
- const docsSubmitted=people.reduce((n,p)=>n+['pwd','senior','authorization'].filter(k=>(p.docVerify?.[k]||'Not Submitted')!=='Not Submitted').length,0);
+ const docsSubmitted=people.reduce((n,p)=>n+['pwd','senior','authorization'].filter(k=>!['Not Submitted','Not Required'].includes(p.docVerify?.[k]||'Not Submitted')).length,0);
  const docsVerified=people.reduce((n,p)=>n+['pwd','senior','authorization'].filter(k=>p.docVerify?.[k]==='Verified').length,0);
  return {
    total:people.length,
@@ -364,6 +371,8 @@ function body(){
      ${linkedCard(p)}
    </div>
 
+   ${p.type==='Companion'?'<div class="companionDocNotice"><b>COMPANION DOCUMENTS</b><span>PWD ID and Senior Citizen ID may be marked <strong>Not Required</strong>. This does not block Check-in, Snack, or Lunch. Authorization Letter is only collected when applicable.</span></div>':''}
+
    <div class="profileSection ${isNew('verification')?'newFeature':''}" id="verifySection">
      <div class="profileSectionTitle"><b>Document Verification</b>${isNew('verification')?'<span class="newPill">NEW VERIFICATION</span>':''}</div>
      <div class="verifyGrid">
@@ -395,6 +404,7 @@ function body(){
      <button id="openPass" class="primary">OPEN DIGITAL PASS</button>
    </div>
    <p class="lead">Upload the attendee's supporting documents. Files are stored locally on this device for offline use.</p>
+   ${p.type==='Companion'?'<div class="companionDocNotice"><b>COMPANION</b><span>No PWD ID or Senior Citizen ID? Leave them as <strong>Not Required</strong>. Staff may continue to Check-in, Snack, and Lunch.</span></div>':''}
 
    <div class="docUploadGrid">
      ${docUploadCard('PWD ID — Front','pwd-front')}
@@ -427,8 +437,9 @@ function body(){
  <section class="panel">
    <div class="passCompact">${passSummary(p)}</div>
 
+   ${p.type==='Companion'?'<div class="companionDocNotice"><b>COMPANION</b><span>PWD/Senior ID is optional when not applicable. Check-in, Snack, and Lunch remain available.</span></div>':''}
    <div class="claimDocs">
-     <h3>Upload ID Before Claiming Stub</h3>
+     <h3>${p.type==='Companion'?'Optional Companion ID Upload':'Upload ID Before Claiming Stub'}</h3>
      <p class="note">Staff can upload the attendee's PWD ID or Senior Citizen ID directly on this claim screen.</p>
 
      <div class="claimDocButtons">
@@ -614,7 +625,7 @@ function linkedCard(p){
  </button>`
 }
 function verifyRow(label,key,p){
- const opts=['Not Submitted','Submitted','For Review','Verified','Rejected'];
+ const opts=['Not Required','Not Submitted','Submitted','For Review','Verified','Rejected'];
  return `<label class="verifyRow"><span>${label}</span>
    <select class="verifySelect" data-verify="${key}">
      ${opts.map(o=>`<option value="${o}" ${p.docVerify?.[key]===o?'selected':''}>${o}</option>`).join('')}
@@ -632,8 +643,11 @@ async function refreshProfileDocs(){
  for(const [g,slots] of Object.entries(groups)){
    let has=false;
    for(const s of slots){if(await getDoc(docKey(p,s))){has=true;break}}
-   if(has&&p.docVerify[g]==='Not Submitted'){p.docVerify[g]='Submitted';changed=true}
-   if(!has&&p.docVerify[g]==='Submitted'){p.docVerify[g]='Not Submitted';changed=true}
+   if(has&&['Not Submitted','Not Required'].includes(p.docVerify[g])){p.docVerify[g]='Submitted';changed=true}
+   if(!has&&p.docVerify[g]==='Submitted'){
+     p.docVerify[g]=(p.type==='Companion'&&(g==='pwd'||g==='senior'))?'Not Required':'Not Submitted';
+     changed=true
+   }
  }
  if(changed){save();render()}
 }
@@ -657,7 +671,13 @@ async function refreshDocStatuses(){
    const nm=document.querySelector('[data-doc-name="'+slot+'"]');
    const view=document.querySelector('[data-view-slot="'+slot+'"]');
    const del=document.querySelector('[data-delete-slot="'+slot+'"]');
-   if(st){st.textContent=rec?'SAVED':'NOT SUBMITTED';st.classList.toggle('saved',!!rec)}
+   if(st){
+     const g=docGroup(slot);
+     const notRequired=!rec&&p.type==='Companion'&&(g==='pwd'||g==='senior')&&p.docVerify?.[g]==='Not Required';
+     st.textContent=rec?'SAVED':notRequired?'NOT REQUIRED':'NOT SUBMITTED';
+     st.classList.toggle('saved',!!rec);
+     st.classList.toggle('notRequired',notRequired);
+   }
    if(nm){
    const prefix=slot==='pwd-front'?'PWD ID: ':slot==='senior-front'?'Senior ID: ':'';
    nm.textContent=prefix+(rec?rec.name:'No file saved');
@@ -684,7 +704,7 @@ async function removeDoc(slot){
    const p=people[selected];
    const related=g==='pwd'?['pwd-front','pwd-back']:g==='senior'?['senior-front','senior-back']:['authorization'];
    let remains=false;for(const s of related){if(await getDoc(docKey(p,s))){remains=true;break}}
-   if(!remains)p.docVerify[g]='Not Submitted';
+   if(!remains)p.docVerify[g]=(p.type==='Companion'&&(g==='pwd'||g==='senior'))?'Not Required':'Not Submitted';
    save();
  }
  await refreshDocStatuses();
@@ -753,7 +773,7 @@ function wire(){
    await putDoc(docKey(people[selected],slot),file);
    addAudit('Document uploaded',people[selected],slot+' • '+file.name);
    const g=docGroup(slot);
-   if(g&&people[selected].docVerify[g]==='Not Submitted')people[selected].docVerify[g]='Submitted';
+   if(g&&['Not Submitted','Not Required'].includes(people[selected].docVerify[g]))people[selected].docVerify[g]='Submitted';
    save();
    await refreshDocStatuses();
    if(screen==='profile')render();
@@ -772,7 +792,7 @@ function wire(){
     return alert('DUPLICATE WARNING\n\n'+n+' is already registered as a '+t+' with Pass '+duplicate.id+'.\n\nNo duplicate was added.');
   }
   const id=nextWalkInId(t);
-  people.push({id,name:n,type:t,linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''});
+  people.push({id,name:n,type:t,linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:'',docVerify:{pwd:t==='Companion'?'Not Required':'Not Submitted',senior:t==='Companion'?'Not Required':'Not Submitted',authorization:'Not Submitted'},docNotes:''});
   addAudit('Walk-in registered',people[people.length-1]);
   save();alert('Walk-in saved offline. Pass '+id);render()
  };
@@ -847,7 +867,7 @@ async function importExcel(file){
   m.slice(hi+1).forEach(r=>{
    const pnme=String(r[pc]||'').trim(),cnme=cc>=0?String(r[cc]||'').trim():'';
    let pObj=null,cObj=null;
-   if(pnme){pn++;pObj={id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''}}
+   if(pnme){pn++;pObj={id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:'',docVerify:{pwd:'Not Required',senior:'Not Required',authorization:'Not Submitted'},docNotes:''}}
    if(cnme){cn++;cObj={id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:null,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''}}
    if(pObj&&cObj){pObj.linkedId=cObj.id;cObj.linkedId=pObj.id}
    if(pObj)a.push(pObj);if(cObj)a.push(cObj)
