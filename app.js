@@ -556,6 +556,7 @@ function wire(){
  },true);
  const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
+ document.querySelectorAll('[data-export-docs]').forEach(b=>b.onclick=()=>exportDocumentFiles(b.dataset.exportDocs));
  const zipBtn=document.getElementById('exportDocsZip'); if(zipBtn)zipBtn.onclick=exportDocumentFiles;
  const bk=document.getElementById('backupNow'); if(bk)bk.onclick=backupEventData;
  const rf=document.getElementById('restoreFile'); if(rf)rf.onchange=e=>e.target.files?.[0]&&restoreEventData(e.target.files[0]);
@@ -658,6 +659,36 @@ async function exportDocumentFiles(){
  }finally{
    if(btn){btn.disabled=false;btn.textContent='EXPORT DOCUMENT FILES (.ZIP)'}
  }
+}
+
+function docSlotInfo(key){
+ const slot=String(key).split('::')[1]||'';
+ if(slot.startsWith('pwd-'))return {group:'pwd',label:slot==='pwd-back'?'PWD-Back':'PWD-Front'};
+ if(slot.startsWith('senior-'))return {group:'senior',label:slot==='senior-back'?'Senior-ID-Back':'Senior-ID-Front'};
+ if(slot==='authorization')return {group:'authorization',label:'Authorization-Letter'};
+ return {group:'other',label:'Document'};
+}
+function safeName(s){return String(s||'').replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim()||'Unknown'}
+async function exportDocumentFiles(group){
+ try{
+   if(!window.JSZip){alert('ZIP library is not ready. Reopen the site while online once, then try again.');return}
+   const docs=await listDocs(),zip=new JSZip();let count=0;
+   for(const d of docs){
+     const info=docSlotInfo(d.key); if(group!=='all'&&info.group!==group)continue;
+     const pass=String(d.key).split('::')[0]||'UNKNOWN';
+     const person=people.find(p=>p.id===pass);
+     const original=d.value.name||'document';
+     const dot=original.lastIndexOf('.'),ext=dot>=0?original.slice(dot):'';
+     zip.file(safeName(pass)+'_'+safeName(person?.name||'Unknown')+'_'+info.label+ext,d.value.blob);
+     count++;
+   }
+   if(!count){alert('No uploaded files found for this category.');return}
+   const blob=await zip.generateAsync({type:'blob'});
+   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+   const label=group==='all'?'ALL_DOCUMENTS':group==='pwd'?'PWD_FILES':group==='senior'?'SENIOR_ID_FILES':'AUTHORIZATION_LETTERS';
+   a.download='PDW_2027_'+label+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+   markSeen('doc-export');
+ }catch{alert('Could not create the document ZIP file.')}
 }
 
 async function backupEventData(){
