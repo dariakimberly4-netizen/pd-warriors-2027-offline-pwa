@@ -509,3 +509,18 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .readyWarn{border-color:#d0a93b!important;background:#fff7d8!important}.readyWarn .readyDot{background:#c69b20;color:#fff}.readyWarn b{color:#6d5600}
 .readyBad{border-color:#c46a61!important;background:#fff0ee!important}.readyBad .readyDot{background:#a74439;color:#fff}.readyBad b{color:#8e3028}
 @media(max-width:620px){.readyRow{grid-template-columns:40px 1fr;padding:14px}.readyRow b{font-size:19px}.readyRow small{font-size:14px}}
+
+/* v26 — companion documents may be Not Required */
+.companionDocNotice{
+  border:3px solid #8cae94;
+  border-radius:16px;
+  background:#eef7ef;
+  padding:14px 16px;
+  margin:4px 0 16px;
+}
+.companionDocNotice b,.companionDocNotice span{display:block}
+.companionDocNotice b{font-size:17px;color:var(--green);letter-spacing:.5px}
+.companionDocNotice span{margin-top:5px;color:#506158;line-height:1.45}
+.docStatus.notRequired{background:#edf1ed!important;color:#59665e!important;border:1px solid #bdc8bf}
+.verifySelect option[value="Not Required"]{font-weight:700}
+@media(max-width:620px){.companionDocNotice b{font-size:19px}.companionDocNotice span{font-size:16px}}
