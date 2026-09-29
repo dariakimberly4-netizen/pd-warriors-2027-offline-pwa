@@ -38,9 +38,9 @@ function ensureLinks(){
 ensureLinks();
 localStorage.setItem(K,JSON.stringify(people));
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
-let screen='home', query='', winner='', scannerStream=null, html5Scanner=null, pendingCorrection=null, readinessResults=null;
-const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', LAST_BACKUP_KEY='pdw-last-backup-v1', STAFF_PIN='2027';
-let currentStaff=null, staffNames=[], auditLog=[], raffleWinners=[];
+let screen='home', query='', attendeeFilter='all', winner='', scannerStream=null, html5Scanner=null, pendingCorrection=null, readinessResults=null;
+const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', LAST_BACKUP_KEY='pdw-last-backup-v1', SUPERVISOR_SESSION='pdw-supervisor-session-v1', STAFF_PIN='2027';
+let currentStaff=null, staffNames=[], auditLog=[], raffleWinners=[], supervisorUnlocked=sessionStorage.getItem(SUPERVISOR_SESSION)==='yes';
 try{currentStaff=JSON.parse(sessionStorage.getItem(STAFF_SESSION)||'null')}catch{}
 try{staffNames=JSON.parse(localStorage.getItem(STAFF_NAMES)||'[]')}catch{}
 try{auditLog=JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]')}catch{}
@@ -265,7 +265,8 @@ const modules=[
  ['report','RPT','End-of-Event Report','Live totals for attendance, claims, documents and raffle'],
  ['readiness','READY','Offline Readiness Check','Test this device before event day'],
  ['backup','SAFE','Backup / Restore','Save or restore all offline event data'],
- ['audit','LOG','Staff Activity','Offline audit trail of staff actions']
+ ['audit','LOG','Staff Activity','Offline audit trail of staff actions'],
+ ['supervisor','PIN','Supervisor Mode','Protected corrections and raffle undo']
 ];
 
 function stopScanner(){
@@ -331,9 +332,9 @@ function home(){
  <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard ${((id==='downloads'&&isNew('downloads'))||(id==='readiness'&&isNew('readiness'))||(id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='downloads'?'downloads':id==='readiness'?'readiness':id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
+    <button class="moduleCard ${((id==='supervisor'&&isNew('supervisor'))||(id==='downloads'&&isNew('downloads'))||(id==='readiness'&&isNew('readiness'))||(id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='supervisor'?'supervisor':id==='downloads'?'downloads':id==='readiness'?'readiness':id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='downloads'&&isNew('downloads')?'<span class="newPill">DOWNLOAD ALL</span>':id==='readiness'&&isNew('readiness')?'<span class="newPill">NEW CHECK</span>':id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
+      <span class="moduleCopy"><strong>${title}${id==='supervisor'&&isNew('supervisor')?'<span class="newPill">PROTECTED</span>':id==='downloads'&&isNew('downloads')?'<span class="newPill">DOWNLOAD ALL</span>':id==='readiness'&&isNew('readiness')?'<span class="newPill">NEW CHECK</span>':id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -363,6 +364,20 @@ function body(){
  <section class="panel">
    <p class="lead">Search by first name, last name, or any part of the attendee name.</p>
    <input id="search" class="field" value="${esc(query)}" placeholder="Search first name or last name…">
+   <div class="attendeeFilters">
+     ${[
+       ['all','ALL'],
+       ['participant','PARTICIPANTS'],
+       ['companion','COMPANIONS'],
+       ['checked','CHECKED IN'],
+       ['notchecked','NOT CHECKED IN'],
+       ['snack','SNACK PENDING'],
+       ['lunch','LUNCH PENDING'],
+       ['raffle','RAFFLE PENDING'],
+       ['documents','DOCUMENTS PENDING']
+     ].map(([v,l])=>`<button type="button" class="filterBtn ${attendeeFilter===v?'active':''}" data-filter="${v}">${l}</button>`).join('')}
+   </div>
+   <div class="filterCount" id="filterCount"></div>
    <div id="results">${results()}</div>
    ${selected!==null&&people[selected]?`
      <div class="selectedProceed">
@@ -588,6 +603,44 @@ function body(){
    <p class="note"><b>Offline:</b> once this version has loaded and cached, the ZIP export works from the documents already stored on this device.</p>
  </section>`;
 
+ if(screen==='supervisor')return pageHeader('Supervisor Mode')+`
+ <section class="panel supervisorPanel">
+   ${!supervisorUnlocked?`
+     <div class="supervisorLock">
+       <div class="loginBadge">PROTECTED CORRECTION MODE</div>
+       <h3>Supervisor PIN</h3>
+       <p>Use Supervisor Mode only to correct mistakes already recorded in the event system.</p>
+       <input id="supervisorPin" class="field" inputmode="numeric" maxlength="4" type="password" placeholder="Enter 4-digit PIN">
+       <button id="unlockSupervisor" class="danger full">UNLOCK SUPERVISOR MODE</button>
+       <p id="supervisorMsg" class="loginMsg"></p>
+     </div>
+   `:`
+     <div class="supervisorHeader">
+       <div><small>SUPERVISOR MODE</small><b>Corrections Unlocked</b></div>
+       <button id="lockSupervisor" class="softBtn">LOCK</button>
+     </div>
+     ${p?`
+       <div class="supervisorPerson">
+         <small>SELECTED ATTENDEE</small>
+         <b>${esc(p.name)}</b>
+         <span>${esc(p.type)} • Pass #${esc(p.id)}</span>
+       </div>
+       <div class="supervisorActions">
+         <button class="danger supervisorReset" data-super-reset="attendance">RESET CHECK-IN</button>
+         <button class="danger supervisorReset" data-super-reset="snack">RESET SNACK</button>
+         <button class="danger supervisorReset" data-super-reset="lunch">RESET LUNCH</button>
+         ${p.raffle===null?'':`<button class="danger supervisorReset" data-super-reset="raffle">RESET RAFFLE CLAIM</button>`}
+         <button id="resetDocVerification" class="softBtn">RESET DOCUMENT VERIFICATION</button>
+         <button id="clearDocNotes" class="softBtn">CLEAR DOCUMENT NOTES</button>
+       </div>
+     `:'<div class="empty"><b>No attendee selected</b><p>Select an attendee in Attendee Database first, then return to Supervisor Mode.</p></div>'}
+     <div class="supervisorRaffle">
+       <h3>Raffle Correction</h3>
+       ${raffleWinners.length?`<p>Last winner: <b>${esc(raffleWinners[raffleWinners.length-1].name)}</b></p><button id="undoLastWinner" class="danger full">REMOVE LAST RAFFLE WINNER</button>`:'<p class="note">No raffle winner to remove.</p>'}
+     </div>
+   `}
+ </section>`;
+
  if(screen==='audit')return pageHeader('Staff Activity')+`
  <section class="panel">
    <p class="lead">Activity is recorded locally on this device while staff are logged in.</p>
@@ -642,9 +695,31 @@ function render(){
  wire();
 }
 
+function attendeeMatchesFilter(p){
+ if(attendeeFilter==='participant')return p.type==='Participant';
+ if(attendeeFilter==='companion')return p.type==='Companion';
+ if(attendeeFilter==='checked')return !!p.attendance;
+ if(attendeeFilter==='notchecked')return !p.attendance;
+ if(attendeeFilter==='snack')return !p.snack;
+ if(attendeeFilter==='lunch')return !p.lunch;
+ if(attendeeFilter==='raffle')return p.type==='Participant'&&!p.raffle;
+ if(attendeeFilter==='documents'){
+   const vals=['pwd','senior','authorization'].map(k=>p.docVerify?.[k]||'Not Submitted');
+   return vals.some(v=>!['Verified','Not Required'].includes(v));
+ }
+ return true;
+}
+function filteredPeople(){
+ const q=query.trim().toLowerCase();
+ return people.map((p,i)=>({p,i})).filter(x=>(!q||x.p.name.toLowerCase().includes(q))&&attendeeMatchesFilter(x.p));
+}
+function updateFilterCount(){
+ const el=document.getElementById('filterCount');
+ if(el)el.textContent=filteredPeople().length+' attendee'+(filteredPeople().length===1?'':'s')+' shown';
+}
 function results(){
- const hits=people.map((p,i)=>({p,i})).filter(x=>x.p.name.toLowerCase().includes(query.trim().toLowerCase()));
- if(!hits.length)return '<div class="empty">No name found.</div>';
+ const hits=filteredPeople();
+ if(!hits.length)return '<div class="empty">No attendee found for this filter.</div>';
  return hits.map(({p,i})=>{
   const isSelected=selected===i;
   return `
@@ -656,7 +731,6 @@ function results(){
     ${isSelected
       ?`<button type="button" class="primary selectedBtn openSelected" data-i="${i}">OPEN SELECTED</button>`
       :`<button type="button" class="primary select" data-i="${i}">SELECT</button>`}
-
   </div>`
  }).join('');
 }
@@ -761,8 +835,52 @@ function passCard(p){return `
    ${passSummary(p)}
    <div id="qr" class="qr"></div>
    <div class="qrLabel">QR CODE GENERATED</div>
+   <div class="passDownloadActions">
+     <button id="downloadPassPng" class="primary">DOWNLOAD PASS PNG</button>
+     <button id="printPass" class="softBtn">PRINT / SAVE AS PDF</button>
+   </div>
    <button id="gotoclaims" class="primary full">OPEN CLAIMS</button>
  </section>`}
+function qrDataUrl(){
+ const q=document.querySelector('#qr canvas');
+ if(q&&q.toDataURL)return q.toDataURL('image/png');
+ const img=document.querySelector('#qr img');
+ return img?.src||'';
+}
+function downloadPassPng(p){
+ const qrUrl=qrDataUrl();if(!qrUrl)return alert('QR code is still loading. Try again.');
+ const out=document.createElement('canvas');out.width=900;out.height=1100;
+ const ctx=out.getContext('2d');
+ ctx.fillStyle='#fffdf7';ctx.fillRect(0,0,out.width,out.height);
+ ctx.fillStyle='#245c3b';ctx.textAlign='center';ctx.font='700 34px Arial';ctx.fillText("PARKINSON'S DISEASE WARRIORS PHILIPPINES",450,85);
+ ctx.fillStyle='#a22d24';ctx.font='700 48px Arial';ctx.fillText('GET TOGETHER 2027',450,145);
+ ctx.fillStyle='#245c3b';ctx.font='700 44px Arial';ctx.fillText(p.name,450,235);
+ ctx.fillStyle='#555';ctx.font='28px Arial';ctx.fillText(p.type+' • Pass #'+p.id,450,285);
+ const img=new Image();
+ img.onload=()=>{
+   ctx.drawImage(img,250,340,400,400);
+   ctx.fillStyle='#245c3b';ctx.font='700 28px Arial';
+   ctx.fillText(p.type==='Participant'?'Snack • Lunch • Raffle':'Snack • Lunch • No Raffle',450,800);
+   ctx.font='22px Arial';ctx.fillStyle='#666';ctx.fillText('Present this pass during the event.',450,850);
+   const a=document.createElement('a');a.href=out.toDataURL('image/png');a.download='PDW_2027_'+safeFilePart(p.id+'_'+p.name)+'.png';a.click();
+   addAudit('Downloaded individual pass',p,'PNG');
+ };
+ img.src=qrUrl;
+}
+function printPassPdf(p){
+ const qrUrl=qrDataUrl();if(!qrUrl)return alert('QR code is still loading. Try again.');
+ const w=window.open('','_blank','width=720,height=900');
+ if(!w)return alert('Please allow pop-ups to print or save the pass.');
+ w.document.write(`<!doctype html><html><head><title>PDW 2027 Pass</title><style>
+ body{font-family:Arial,sans-serif;background:#fffdf7;color:#245c3b;text-align:center;padding:36px}
+ .card{max-width:540px;margin:auto;border:3px solid #c9a225;border-radius:22px;padding:28px}
+ h1{color:#a22d24;margin:8px 0}h2{font-size:34px;margin:22px 0 5px}.meta{color:#555;font-size:20px}
+ img{width:300px;height:300px;margin:28px auto}.stub{font-size:20px;font-weight:700;margin-top:12px}
+ @media print{body{padding:0}.card{border:2px solid #c9a225}}
+ </style></head><body><div class="card"><b>PARKINSON'S DISEASE WARRIORS PHILIPPINES</b><h1>GET TOGETHER 2027</h1><h2>${esc(p.name)}</h2><div class="meta">${esc(p.type)} • Pass #${esc(p.id)}</div><img src="${qrUrl}"><div class="stub">${p.type==='Participant'?'Snack • Lunch • Raffle':'Snack • Lunch • No Raffle'}</div></div><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`);
+ w.document.close();
+ addAudit('Opened individual pass for print/PDF',p);
+}
 function formatTime(v){if(!v)return'';try{return new Date(v).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}catch{return v}}
 function claimButtons(p){
  const ks=['attendance','snack','lunch',...(p.raffle===null?[]:['raffle'])];
@@ -793,7 +911,7 @@ function wire(){
    screen='home';render();
  };
  const logout=document.getElementById('logoutStaff');
- if(logout)logout.onclick=()=>{addAudit('Staff logout');currentStaff=null;sessionStorage.removeItem(STAFF_SESSION);screen='home';stopScanner();render()};
+ if(logout)logout.onclick=()=>{addAudit('Staff logout');currentStaff=null;supervisorUnlocked=false;sessionStorage.removeItem(STAFF_SESSION);sessionStorage.removeItem(SUPERVISOR_SESSION);screen='home';stopScanner();render()};
  const ex=document.getElementById('excel'); if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);
  const runReady=document.getElementById('runReady'); if(runReady)runReady.onclick=runReadinessCheck;
  if(screen==='readiness'&&readinessResults)setTimeout(renderReadinessResults,0);
@@ -842,8 +960,14 @@ function wire(){
   addAudit('Walk-in registered',people[people.length-1]);
   save();alert('Walk-in saved offline. Pass '+id);render()
  };
- const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
- bindSelect();
+ const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect();updateFilterCount()};
+ document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{
+   attendeeFilter=b.dataset.filter;
+   document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x.dataset.filter===attendeeFilter));
+   document.getElementById('results').innerHTML=results();
+   bindSelect();updateFilterCount();
+ });
+ bindSelect();updateFilterCount();
  const proceedSelected=document.getElementById('proceedSelected'); if(proceedSelected)proceedSelected.onclick=()=>setScreen('profile');
  const p=selected==null?null:people[selected];
  if(p&&document.getElementById('qr')){
@@ -851,6 +975,8 @@ function wire(){
   if(window.QRCode)new QRCode(el,{text:JSON.stringify({event:'PDWPH-GET-TOGETHER-2027',passId:p.id,name:p.name,type:p.type}),width:210,height:210,correctLevel:QRCode.CorrectLevel.M});
   else el.textContent='QR library loading…';
  }
+ const downloadPass=document.getElementById('downloadPassPng'); if(downloadPass&&p)downloadPass.onclick=()=>downloadPassPng(p);
+ const printPass=document.getElementById('printPass'); if(printPass&&p)printPass.onclick=()=>printPassPdf(p);
  const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
  const claimsGrid=document.getElementById('claimsGrid');
  if(claimsGrid)claimsGrid.addEventListener('click',e=>{
@@ -886,6 +1012,43 @@ function wire(){
    winner=picked.name;
    addAudit('Raffle winner drawn',picked,'Winner #'+raffleWinners.length);
    render();
+ };
+ const unlockSupervisor=document.getElementById('unlockSupervisor'); if(unlockSupervisor)unlockSupervisor.onclick=()=>{
+   const pin=document.getElementById('supervisorPin').value.trim(),msg=document.getElementById('supervisorMsg');
+   if(pin!==STAFF_PIN){msg.textContent='Incorrect Supervisor PIN.';return}
+   supervisorUnlocked=true;sessionStorage.setItem(SUPERVISOR_SESSION,'yes');addAudit('Supervisor mode unlocked');render();
+ };
+ const lockSupervisor=document.getElementById('lockSupervisor'); if(lockSupervisor)lockSupervisor.onclick=()=>{
+   supervisorUnlocked=false;sessionStorage.removeItem(SUPERVISOR_SESSION);addAudit('Supervisor mode locked');render();
+ };
+ document.querySelectorAll('.supervisorReset').forEach(b=>b.onclick=()=>{
+   if(!supervisorUnlocked||selected==null)return;
+   const k=b.dataset.superReset;
+   if(!confirm('Reset '+k+' for '+people[selected].name+'?'))return;
+   people[selected][k]=false;people[selected][k+'At']='';
+   addAudit('Supervisor correction',people[selected],'Reset '+k);save();render();
+ });
+ const resetDocVerification=document.getElementById('resetDocVerification'); if(resetDocVerification)resetDocVerification.onclick=async()=>{
+   if(!supervisorUnlocked||selected==null)return;
+   if(!confirm('Reset document verification for '+people[selected].name+'?'))return;
+   const person=people[selected];
+   for(const [g,slots] of Object.entries({pwd:['pwd-front','pwd-back'],senior:['senior-front','senior-back'],authorization:['authorization']})){
+     let has=false;for(const slot of slots){if(await getDoc(docKey(person,slot))){has=true;break}}
+     person.docVerify[g]=has?'Submitted':(person.type==='Companion'&&(g==='pwd'||g==='senior'))?'Not Required':'Not Submitted';
+   }
+   addAudit('Supervisor correction',person,'Reset document verification');save();render();
+ };
+ const clearDocNotes=document.getElementById('clearDocNotes'); if(clearDocNotes)clearDocNotes.onclick=()=>{
+   if(!supervisorUnlocked||selected==null)return;
+   if(!confirm('Clear document notes for '+people[selected].name+'?'))return;
+   people[selected].docNotes='';addAudit('Supervisor correction',people[selected],'Cleared document notes');save();render();
+ };
+ const undoLastWinner=document.getElementById('undoLastWinner'); if(undoLastWinner)undoLastWinner.onclick=()=>{
+   if(!supervisorUnlocked||!raffleWinners.length)return;
+   const last=raffleWinners[raffleWinners.length-1];
+   if(!confirm('Remove '+last.name+' as the last raffle winner?'))return;
+   raffleWinners.pop();localStorage.setItem(RAFFLE_WINNERS_KEY,JSON.stringify(raffleWinners));winner='';
+   addAudit('Supervisor raffle correction',people.find(x=>x.id===last.id)||null,'Removed last winner '+last.name);render();
  };
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
  const reportCsv=document.getElementById('reportCsv'); if(reportCsv)reportCsv.onclick=exportEventReportCsv;
