@@ -1,5 +1,5 @@
 (()=> {
-const APP_VERSION='30';
+const APP_VERSION='31';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[
  {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
@@ -58,7 +58,7 @@ function addAudit(action,person=null,detail=''){
  if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
 }
-const NEW_KEY='pdw-new-seen-v26';
+const NEW_KEY='pdw-new-seen-v31';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -256,6 +256,7 @@ const modules=[
  ['database','DB','Attendee Database','Search imported names by first or last name'],
  ['profile','NEW','Participant Profile','Summary, linked companion and document verification'],
  ['documents','2','Documents','Step 2 • Collect PWD / Senior ID / authorization'],
+ ['downloads','DL','Download All Documents','Download PWD, Senior ID and Authorization files'],
  ['pass','3','Digital Passes','Step 3 • Generate individual QR codes'],
  ['scanner','4','QR Scanner','Step 4 • Scan participant or companion QR'],
  ['claims','5','Claims','Step 5 • Check-in + Snack + Lunch + Raffle claims'],
@@ -330,9 +331,9 @@ function home(){
  <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard ${((id==='readiness'&&isNew('readiness'))||(id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='readiness'?'readiness':id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
+    <button class="moduleCard ${((id==='downloads'&&isNew('downloads'))||(id==='readiness'&&isNew('readiness'))||(id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='downloads'?'downloads':id==='readiness'?'readiness':id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='readiness'&&isNew('readiness')?'<span class="newPill">NEW CHECK</span>':id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
+      <span class="moduleCopy"><strong>${title}${id==='downloads'&&isNew('downloads')?'<span class="newPill">DOWNLOAD ALL</span>':id==='readiness'&&isNew('readiness')?'<span class="newPill">NEW CHECK</span>':id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
