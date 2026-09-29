@@ -1,5 +1,5 @@
 (()=> {
-const APP_VERSION='36';
+const APP_VERSION='37';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[];
 const normalize=a=>a.map((p,i)=>({
