@@ -1,0 +1,38 @@
+/* v46 — preserve approved v45 mobile scale; refine login card only.
+   No global/main/header/module resizing here. */
+
+html.phone-device .staffLoginPanel{
+  width:92%!important;
+  max-width:none!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  padding:21px 17px 23px!important;
+  border-radius:17px!important;
+}
+
+/* Give the card a little more vertical rhythm without changing the site scale */
+html.phone-device .staffLoginPanel h2{
+  margin-top:8px!important;
+  margin-bottom:11px!important;
+}
+html.phone-device .staffLoginPanel p{
+  margin-top:0!important;
+  margin-bottom:13px!important;
+  line-height:1.5!important;
+}
+html.phone-device .staffLoginPanel label{
+  margin-top:12px!important;
+  margin-bottom:4px!important;
+}
+html.phone-device .staffLoginPanel .field{
+  margin-top:4px!important;
+  margin-bottom:6px!important;
+}
+html.phone-device .staffLoginPanel .primary{
+  margin-top:5px!important;
+  margin-bottom:2px!important;
+}
+html.phone-device .loginHint{
+  margin-top:18px!important;
+  margin-bottom:0!important;
+}
