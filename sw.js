@@ -1,10 +1,11 @@
-const CACHE='pdw-2027-v40';
+const CACHE='pdw-2027-v41';
 const CORE=[
  './',
  './index.html',
- './app.js?v=40',
- './style.css?v=40',
- './responsive-v40.css?v=40',
+ './app.js?v=41',
+ './style.css?v=41',
+ './responsive-v40.css?v=41',
+ './mobile-proportion-v41.css?v=41',
  './manifest.webmanifest',
  './vendor/xlsx.full.min.js',
  './vendor/qrcode.min.js',
