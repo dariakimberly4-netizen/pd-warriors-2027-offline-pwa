@@ -569,3 +569,227 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .supervisorActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.supervisorActions button{min-height:58px}
 .supervisorRaffle{border-top:2px solid #e0e4df;padding-top:14px}
 @media(max-width:620px){.passDownloadActions,.supervisorActions{grid-template-columns:1fr}.filterBtn{font-size:14px;min-height:46px}}
+
+/* v35 — responsive master for desktop + mobile */
+html{
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  -webkit-text-size-adjust:100%;
+}
+body{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  zoom:1!important;
+}
+img,video,canvas,svg{max-width:100%;height:auto}
+button,input,select,textarea{max-width:100%}
+button{white-space:normal;overflow-wrap:anywhere}
+main{
+  width:min(calc(100% - 48px),1180px)!important;
+  max-width:1180px!important;
+  margin:0 auto!important;
+  padding:28px 0 24px!important;
+  min-width:0!important;
+}
+.brand{
+  grid-template-columns:112px minmax(0,1fr)!important;
+  gap:22px!important;
+}
+.brandLogo{width:108px!important;height:108px!important}
+.brandText,.moduleCopy,.personRow>div,.selectedProceed>div{min-width:0!important}
+.org{font-size:20px!important;overflow-wrap:anywhere}
+.brand h1{font-size:clamp(38px,4.3vw,54px)!important}
+.subtitle{font-size:clamp(22px,2.4vw,30px)!important}
+.rule{margin:30px 0!important}
+.moduleList{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:18px!important;
+}
+.moduleCard{
+  min-width:0!important;
+  min-height:148px!important;
+  grid-template-columns:84px minmax(0,1fr) 24px!important;
+  gap:16px!important;
+  padding:18px!important;
+  border-radius:22px!important;
+}
+.badge{height:84px!important;border-radius:22px!important}
+.moduleCopy strong{font-size:clamp(25px,2.15vw,31px)!important;overflow-wrap:anywhere}
+.moduleCopy small{font-size:18px!important;line-height:1.4!important;overflow-wrap:anywhere}
+.panel{width:100%!important;min-width:0!important}
+.split,.profileQuick,.reportActions,.passDownloadActions,.supervisorActions{min-width:0!important}
+.personRow,.selectedProceed,.selectedBanner,.profileHero,.staffBar,.winnerRow,.auditRow{
+  min-width:0!important;
+}
+.field,.verifySelect,.notesBox{width:100%!important;min-width:0!important}
+.attendeeFilters{width:100%!important}
+.filterBtn{flex:0 1 auto!important}
+.docUploadGrid,.docExportButtons,.claimDocButtons,.claimDocNames,.reportGrid,.summaryGrid{
+  min-width:0!important;
+}
+.qr{overflow:hidden!important}
+.qr img,.qr canvas{width:min(100%,260px)!important;height:auto!important}
+.camera,.qrReader{max-width:100%!important}
+
+/* medium screens / tablets */
+@media (max-width:900px){
+  main{
+    width:100%!important;
+    max-width:none!important;
+    padding:20px 18px 24px!important;
+  }
+  .moduleList{grid-template-columns:1fr!important}
+  .moduleCard{
+    min-height:132px!important;
+    grid-template-columns:74px minmax(0,1fr) 22px!important;
+    gap:14px!important;
+    padding:17px 16px!important;
+  }
+  .badge{height:74px!important}
+  .moduleCopy strong{font-size:28px!important}
+  .moduleCopy small{font-size:18px!important}
+  .reportGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
+/* phones */
+@media (max-width:620px){
+  html,body{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+    zoom:1!important;
+  }
+  body{font-size:18px!important;line-height:1.5!important}
+  main{
+    width:100%!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:14px 12px 22px!important;
+  }
+  .brand{
+    grid-template-columns:70px minmax(0,1fr)!important;
+    gap:11px!important;
+    align-items:center!important;
+  }
+  .brandLogo{width:68px!important;height:68px!important}
+  .org{font-size:13px!important;line-height:1.25!important;letter-spacing:.65px!important}
+  .brand h1{
+    font-size:clamp(30px,10vw,40px)!important;
+    line-height:1.02!important;
+    margin:6px 0 5px!important;
+  }
+  .subtitle{font-size:18px!important;line-height:1.22!important}
+  .rule{height:3px!important;margin:18px 0 20px!important}
+  .offlineBox{
+    padding:20px 16px 20px 25px!important;
+    margin-bottom:18px!important;
+    border-radius:18px!important;
+  }
+  .offlineTitle{font-size:22px!important;margin-bottom:10px!important}
+  .offlineBox p{font-size:17px!important;line-height:1.5!important}
+  .newFeatureNotice{font-size:14px!important}
+  .moduleList{gap:12px!important}
+  .moduleCard{
+    width:100%!important;
+    min-height:112px!important;
+    grid-template-columns:56px minmax(0,1fr) 16px!important;
+    gap:10px!important;
+    padding:13px 11px!important;
+    border-radius:18px!important;
+  }
+  .badge{
+    height:56px!important;
+    border-radius:16px!important;
+    font-size:15px!important;
+  }
+  .moduleCopy{gap:5px!important}
+  .moduleCopy strong{font-size:21px!important;line-height:1.14!important}
+  .moduleCopy small{font-size:14px!important;line-height:1.34!important}
+  .chev{font-size:32px!important}
+  .newPill{font-size:10px!important}
+  .sectionHead{
+    gap:8px!important;
+    margin:0 0 12px!important;
+    align-items:center!important;
+  }
+  .sectionHead h2{font-size:24px!important;line-height:1.15!important}
+  .backBtn{font-size:16px!important;padding:8px 0!important}
+  .panel{
+    padding:15px!important;
+    margin-top:10px!important;
+    border-radius:18px!important;
+  }
+  .lead{font-size:17px!important;line-height:1.5!important}
+  .note{font-size:14px!important;line-height:1.45!important}
+  .field{font-size:17px!important;min-height:54px!important}
+  .primary,.danger,.softBtn{
+    font-size:16px!important;
+    min-height:54px!important;
+    padding:8px 14px!important;
+  }
+  .split,.profileQuick,.reportActions,.passDownloadActions,.supervisorActions,
+  .docExportButtons,.claimDocButtons,.claimDocNames{
+    grid-template-columns:1fr!important;
+  }
+  .personRow{
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:10px!important;
+  }
+  .personRow b{font-size:19px!important}
+  .personRow small{font-size:14px!important}
+  .personRow .select,.personRow .selectedBtn{width:100%!important}
+  .selectedProceed,.selectedBanner,.profileHero,.staffBar,.winnerRow,.auditRow{
+    flex-direction:column!important;
+    align-items:stretch!important;
+  }
+  .selectedProceed .primary,.selectedBanner .primary{width:100%!important}
+  .profileHero h3{font-size:24px!important}
+  .verifyRow{grid-template-columns:1fr!important}
+  .summaryGrid,.reportGrid{grid-template-columns:1fr!important}
+  .claims{grid-template-columns:1fr!important}
+  .claim{min-height:78px!important;font-size:16px!important}
+  .docUploadTop{flex-direction:column!important;align-items:flex-start!important}
+  .docActions{grid-template-columns:1fr 1fr!important}
+  .docUploadBtn{grid-column:1/-1!important}
+  .docUploadBtn,.docViewBtn,.docDeleteBtn{width:100%!important}
+  .attendeeFilters{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+  .filterBtn{
+    width:100%!important;
+    min-height:44px!important;
+    padding:6px 8px!important;
+    font-size:12px!important;
+  }
+  .downloadHero b{font-size:22px!important}
+  .downloadHero span{font-size:14px!important}
+  .downloadAllButtons .exportDocBtn{min-height:62px!important;font-size:16px!important}
+  .readyRow{grid-template-columns:36px minmax(0,1fr)!important;padding:11px!important}
+  .readyDot{width:34px!important;height:34px!important}
+  .readyRow b{font-size:16px!important}
+  .readyRow small{font-size:12px!important}
+  .camera,.qrReader{min-height:240px!important;max-height:58vh!important}
+  footer{font-size:11px!important;padding:24px 4px 6px!important}
+}
+
+/* very small phones */
+@media (max-width:380px){
+  main{padding-left:9px!important;padding-right:9px!important}
+  .brand{grid-template-columns:58px minmax(0,1fr)!important;gap:9px!important}
+  .brandLogo{width:56px!important;height:56px!important}
+  .org{font-size:11px!important}
+  .brand h1{font-size:29px!important}
+  .subtitle{font-size:16px!important}
+  .moduleCard{grid-template-columns:50px minmax(0,1fr) 14px!important;padding:11px 9px!important}
+  .badge{height:50px!important;font-size:13px!important}
+  .moduleCopy strong{font-size:19px!important}
+  .moduleCopy small{font-size:13px!important}
+  .attendeeFilters{grid-template-columns:1fr!important}
+}
