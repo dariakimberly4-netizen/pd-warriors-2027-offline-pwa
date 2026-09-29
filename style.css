@@ -836,3 +836,36 @@ main{
 @media (max-width:380px){
   .staffLoginPanel{padding:16px 13px!important}
 }
+
+/* v37 — slightly larger staff login card on phones/tablets */
+.staffLoginPanel{
+  width:min(100%,640px)!important;
+  max-width:640px!important;
+}
+@media (max-width:900px){
+  .staffLoginPanel{
+    width:94%!important;
+    max-width:640px!important;
+    margin:18px auto 0!important;
+    padding:22px 20px!important;
+  }
+  .staffLoginPanel h2{font-size:31px!important}
+  .staffLoginPanel p{font-size:17px!important}
+  .staffLoginPanel label{font-size:17px!important}
+  .staffLoginPanel .field{
+    min-height:58px!important;
+    font-size:18px!important;
+  }
+  .staffLoginPanel .primary{
+    min-height:60px!important;
+    font-size:18px!important;
+  }
+  .loginHint{font-size:16px!important}
+}
+@media (max-width:620px){
+  .staffLoginPanel{
+    width:100%!important;
+    max-width:none!important;
+    margin:12px 0 0!important;
+  }
+}
