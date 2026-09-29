@@ -1,0 +1,116 @@
+/* v38 — mobile full-width override
+   Uses touch/coarse-pointer detection, not viewport width alone. */
+
+@media (pointer:coarse), (hover:none) {
+  html,body{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+    zoom:1!important;
+  }
+  body{font-size:18px!important;line-height:1.5!important}
+  main{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:16px 14px 22px!important;
+  }
+
+  .brand{
+    grid-template-columns:74px minmax(0,1fr)!important;
+    gap:12px!important;
+    align-items:center!important;
+  }
+  .brandLogo{width:70px!important;height:70px!important}
+  .org{font-size:14px!important;line-height:1.22!important;letter-spacing:.6px!important}
+  .brand h1{font-size:35px!important;line-height:1!important;margin:5px 0!important}
+  .subtitle{font-size:19px!important;line-height:1.2!important}
+  .rule{margin:18px 0 20px!important}
+
+  .staffLoginPanel{
+    width:100%!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:22px 18px!important;
+    border-radius:18px!important;
+  }
+  .staffLoginPanel h2{font-size:29px!important}
+  .staffLoginPanel p{font-size:16px!important;line-height:1.45!important}
+  .staffLoginPanel label{font-size:16px!important}
+  .staffLoginPanel .field{
+    width:100%!important;
+    min-height:58px!important;
+    font-size:17px!important;
+  }
+  .staffLoginPanel .primary{
+    width:100%!important;
+    min-height:58px!important;
+    font-size:16px!important;
+  }
+  .loginHint{font-size:15px!important;padding:12px!important}
+
+  .offlineBox{padding:20px 18px 20px 27px!important;margin-bottom:17px!important}
+  .offlineTitle{font-size:22px!important}
+  .offlineBox p{font-size:17px!important}
+
+  .moduleList{grid-template-columns:1fr!important;gap:12px!important}
+  .moduleCard{
+    width:100%!important;
+    min-width:0!important;
+    min-height:112px!important;
+    grid-template-columns:60px minmax(0,1fr) 18px!important;
+    gap:11px!important;
+    padding:13px 12px!important;
+    border-radius:17px!important;
+  }
+  .badge{height:60px!important;border-radius:15px!important;font-size:15px!important}
+  .moduleCopy strong{font-size:22px!important;line-height:1.12!important}
+  .moduleCopy small{font-size:15px!important;line-height:1.34!important}
+  .chev{font-size:30px!important}
+
+  .panel{width:100%!important;max-width:100%!important;padding:17px!important}
+  .sectionHead h2{font-size:26px!important}
+  .lead{font-size:17px!important}
+  .note{font-size:14px!important}
+  .field,.verifySelect,.notesBox{width:100%!important;min-width:0!important;font-size:16px!important}
+  .primary,.danger,.softBtn{min-height:54px!important;font-size:15px!important}
+
+  .personRow,.selectedProceed,.selectedBanner,.profileHero,.staffBar,.winnerRow,.auditRow{
+    flex-direction:column!important;
+    align-items:stretch!important;
+  }
+  .split,.profileQuick,.reportActions,.passDownloadActions,.supervisorActions,
+  .docExportButtons,.claimDocButtons,.claimDocNames,.summaryGrid,.reportGrid,.claims{
+    grid-template-columns:1fr!important;
+  }
+  .verifyRow{grid-template-columns:1fr!important}
+  .personRow .select,.personRow .selectedBtn,.selectedProceed .primary,.selectedBanner .primary{width:100%!important}
+
+  .attendeeFilters{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:7px!important;
+  }
+  .filterBtn{width:100%!important;min-height:46px!important;font-size:12px!important}
+
+  .qr img,.qr canvas{width:min(100%,280px)!important;height:auto!important}
+  .camera,.qrReader{width:100%!important;max-width:100%!important}
+}
+
+html.phone-device body{
+  font-size:18px!important;
+}
+html.phone-device main{
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:16px 14px 22px!important;
+}
+html.phone-device .staffLoginPanel{
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+html.phone-device .moduleList{grid-template-columns:1fr!important}
