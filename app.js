@@ -1,4 +1,5 @@
 (()=> {
+const APP_VERSION='29';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[
  {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
@@ -219,9 +220,17 @@ async function runReadinessCheck(){
  try{swOk=!!navigator.serviceWorker?.controller}catch{}
  results.push({id:'sw',ok:swOk,note:swOk?'Offline service worker is active.':'Open this site online once and refresh so offline mode can activate.'});
  try{
-   if('caches' in window){const keys=await caches.keys();cacheOk=keys.some(k=>k==='pdw-2027-v28')}
+   if('caches' in window){
+     const checks=await Promise.all([
+       caches.match('./index.html'),
+       caches.match('./app.js?v='+APP_VERSION),
+       caches.match('./style.css?v='+APP_VERSION),
+       caches.match('./manifest.webmanifest')
+     ]);
+     cacheOk=checks.every(Boolean);
+   }
  }catch{}
- results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v28 app files are cached for offline use.':'Current version is not fully cached yet. Open it online once.'});
+ results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v'+APP_VERSION+' core app files are cached for offline use.':'Current version is not fully cached yet. Open the latest version online once, refresh, then run this check again.'});
  results.push({id:'attendees',ok:people.length>0,note:people.length?people.length+' attendee record(s) saved locally.':'No attendee list is saved on this device.'});
  try{const db=await openDocDb();dbOk=!!db;db.close()}catch{}
  results.push({id:'docs',ok:dbOk,note:dbOk?'Local document storage is available.':'Local document storage could not be opened.'});
@@ -567,7 +576,7 @@ function body(){
    <div class="readyList">
      ${readinessRow('internet','Internet Connection','Offline test status')}
      ${readinessRow('sw','Offline App','Service worker / offline shell')}
-     ${readinessRow('cache','Current Version Cached','v28 app files')}
+     ${readinessRow('cache','Current Version Cached','v'+APP_VERSION+' core files')}
      ${readinessRow('attendees','Attendee List','Participant and companion records')}
      ${readinessRow('docs','Local Document Storage','PWD, Senior ID and Authorization files')}
      ${readinessRow('excel','Excel Import','Offline spreadsheet import')}
