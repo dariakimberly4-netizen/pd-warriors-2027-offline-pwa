@@ -346,3 +346,9 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 /* v16 — expose Check-in location from Home */
 .moduleCard.newFeature .moduleCopy strong{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 @media(max-width:620px){.moduleCard.newFeature .moduleCopy strong{align-items:flex-start}}
+
+/* v17 — claimed buttons stay clickable for staff corrections */
+.claim.claimed{cursor:pointer!important;opacity:1!important}
+.claim.claimed:hover{filter:brightness(.96)}
+.claim.claimed small{font-size:11px;line-height:1.25}
+@media(max-width:620px){.claim.claimed small{font-size:12px}}
