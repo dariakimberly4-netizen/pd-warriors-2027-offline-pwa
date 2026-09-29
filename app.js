@@ -8,7 +8,7 @@ const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null;
-const NEW_KEY='pdw-new-seen-v14';
+const NEW_KEY='pdw-new-seen-v16';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -32,7 +32,7 @@ const modules=[
  ['documents','2','Documents','Step 2 • Collect PWD / Senior ID / authorization'],
  ['pass','3','Digital Passes','Step 3 • Generate individual QR codes'],
  ['scanner','4','QR Scanner','Step 4 • Scan participant or companion QR'],
- ['claims','5','Claims','Step 5 • Tap Snack, Lunch or Raffle to mark CLAIMED'],
+ ['claims','5','Claims','Step 5 • Check-in + Snack + Lunch + Raffle claims'],
  ['raffle','DRAW','Raffle Draw','Draw a winner from eligible participants only'],
  ['export','DOC','Export Documents','Export document and claim status offline'],
  ['backup','SAFE','Backup / Restore','Save or restore all offline event data']
@@ -70,9 +70,9 @@ function home(){
  <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard ${id==='backup'&&isNew('backup')?'newFeature':''}" data-screen="${id}" data-new-id="${id==='backup'?'backup':''}">
+    <button class="moduleCard ${((id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':''}</strong><small>${desc}</small></span>
+      <span class="moduleCopy"><strong>${title}${id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${desc}</small></span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
