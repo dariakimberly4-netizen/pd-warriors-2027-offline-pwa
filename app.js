@@ -1,5 +1,5 @@
 (()=> {
-const APP_VERSION='29';
+const APP_VERSION='30';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[
  {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
@@ -38,7 +38,7 @@ function ensureLinks(){
 ensureLinks();
 localStorage.setItem(K,JSON.stringify(people));
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
-let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null, readinessResults=null;
+let screen='home', query='', winner='', scannerStream=null, html5Scanner=null, pendingCorrection=null, readinessResults=null;
 const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', LAST_BACKUP_KEY='pdw-last-backup-v1', STAFF_PIN='2027';
 let currentStaff=null, staffNames=[], auditLog=[], raffleWinners=[];
 try{currentStaff=JSON.parse(sessionStorage.getItem(STAFF_SESSION)||'null')}catch{}
@@ -225,19 +225,24 @@ async function runReadinessCheck(){
        caches.match('./index.html'),
        caches.match('./app.js?v='+APP_VERSION),
        caches.match('./style.css?v='+APP_VERSION),
-       caches.match('./manifest.webmanifest')
+       caches.match('./manifest.webmanifest'),
+       caches.match('./vendor/xlsx.full.min.js'),
+       caches.match('./vendor/qrcode.min.js'),
+       caches.match('./vendor/jszip.min.js'),
+       caches.match('./vendor/html5-qrcode.min.js'),
+       caches.match('./assets/pdw-logo.jpg')
      ]);
      cacheOk=checks.every(Boolean);
    }
  }catch{}
- results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v'+APP_VERSION+' core app files are cached for offline use.':'Current version is not fully cached yet. Open the latest version online once, refresh, then run this check again.'});
+ results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v'+APP_VERSION+' app, logo, and local libraries are cached for offline use.':'Current version is not fully cached yet. Open the latest version online once, refresh, then run this check again.'});
  results.push({id:'attendees',ok:people.length>0,note:people.length?people.length+' attendee record(s) saved locally.':'No attendee list is saved on this device.'});
  try{const db=await openDocDb();dbOk=!!db;db.close()}catch{}
  results.push({id:'docs',ok:dbOk,note:dbOk?'Local document storage is available.':'Local document storage could not be opened.'});
  results.push({id:'excel',ok:!!window.XLSX,note:window.XLSX?'Excel import library is loaded/cached.':'Excel import library is unavailable offline on this device.'});
  results.push({id:'qrgen',ok:!!window.QRCode,note:window.QRCode?'Digital pass QR generation is available.':'QR generation library is unavailable offline.'});
- const scanOk=('BarcodeDetector' in window);
- results.push({id:'qrscan',ok:scanOk?true:'warn',note:scanOk?'Camera QR detection is supported.':'Camera QR detection is not supported here; staff can still search names manually.'});
+ const scanOk=!!window.Html5Qrcode||('BarcodeDetector' in window);
+ results.push({id:'qrscan',ok:scanOk?true:'warn',note:window.Html5Qrcode?'Local offline QR scanner is loaded and ready.':('BarcodeDetector' in window)?'Native camera QR detection is supported.':'Camera QR scanning is unavailable here; staff can still search names manually.'});
  results.push({id:'zip',ok:!!window.JSZip,note:window.JSZip?'Document ZIP export is available.':'ZIP export library is unavailable offline.'});
  const lastBackup=localStorage.getItem(LAST_BACKUP_KEY);
  results.push({id:'backup',ok:lastBackup?true:'warn',note:lastBackup?'Last backup: '+formatTime(lastBackup):'No backup has been created on this device yet.'});
@@ -262,7 +267,17 @@ const modules=[
  ['audit','LOG','Staff Activity','Offline audit trail of staff actions']
 ];
 
-function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
+function stopScanner(){
+ if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}
+ if(html5Scanner){
+   const s=html5Scanner;html5Scanner=null;
+   try{
+     const out=s.stop();
+     if(out&&typeof out.then==='function')out.catch(()=>{}).finally(()=>{try{s.clear()}catch{}});
+     else{try{s.clear()}catch{}}
+   }catch{try{s.clear()}catch{}}
+ }
+}
 function setScreen(s){screen=s; pendingCorrection=null; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
 function selectPerson(i){selected=i;localStorage.setItem(S,String(i));addAudit('Selected attendee',people[i]);screen='database';render()}
 function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
@@ -270,7 +285,7 @@ function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Comp
 function shell(content){
  return `<main>
  <header class="brand">
-   <img class="brandLogo" src="https://e6f82797-63ce-4bab-a068-36498212aea2.sandbox.floot.app/_cdn/static/17d6c48c-4486-4966-82fa-9ac8c81f53ed-pd-warriors-logo.jpg" alt="PD Warriors Philippines logo">
+   <img class="brandLogo" src="./assets/pdw-logo.jpg" alt="PD Warriors Philippines logo">
    <div class="brandText">
      <div class="org">PARKINSON'S DISEASE WARRIORS<br>PHILIPPINES</div>
      <h1>Get Together 2027</h1>
@@ -481,8 +496,9 @@ function body(){
  <section class="panel">
    <p id="scanmsg" class="lead">Tap START CAMERA and point the rear camera at the attendee QR code.</p>
    <button id="startcam" class="primary full">START CAMERA</button>
-   <video id="camera" class="camera" playsinline muted></video>
-   <p class="note">If camera QR detection is unavailable, search the attendee name manually.</p>
+   <div id="qrreader" class="camera qrReader"></div>
+   <video id="camera" class="camera nativeCamera" playsinline muted></video>
+   <p class="note"><b>Offline scanner:</b> the QR scanning library is stored inside this system. If camera access is unavailable, staff can still search the attendee name manually.</p>
  </section>`;
 
  if(screen==='raffle'){
@@ -576,7 +592,7 @@ function body(){
    <div class="readyList">
      ${readinessRow('internet','Internet Connection','Offline test status')}
      ${readinessRow('sw','Offline App','Service worker / offline shell')}
-     ${readinessRow('cache','Current Version Cached','v'+APP_VERSION+' core files')}
+     ${readinessRow('cache','Fully Local App Cached','App, logo and scanner libraries')}
      ${readinessRow('attendees','Attendee List','Participant and companion records')}
      ${readinessRow('docs','Local Document Storage','PWD, Senior ID and Authorization files')}
      ${readinessRow('excel','Excel Import','Offline spreadsheet import')}
@@ -1078,26 +1094,74 @@ async function restoreEventData(file){
  }catch{alert('This backup file could not be restored.')}
 }
 
+function handleScannedQr(raw,msg){
+ let data;try{data=JSON.parse(raw)}catch{}
+ const i=people.findIndex(x=>(data?.passId&&x.id===data.passId)||(data?.name&&x.name===data.name));
+ if(i>=0){
+   addAudit('QR scanned',people[i]);
+   stopScanner();
+   selected=i;
+   localStorage.setItem(S,String(i));
+   screen='claims';
+   render();
+   return true;
+ }
+ if(msg)msg.textContent='QR read, but attendee was not found on this device.';
+ return false;
+}
+
 async function startScanner(){
- const msg=document.getElementById('scanmsg'),video=document.getElementById('camera');if(!video)return;
- if(!('BarcodeDetector'in window)){msg.textContent='QR scanning is not supported by this browser. Search the attendee name manually.';return}
- try{
-  scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});video.srcObject=scannerStream;await video.play();
-  const detector=new BarcodeDetector({formats:['qr_code']});msg.textContent='Camera active — point at the QR code.';
-  const loop=async()=>{
-   if(screen!=='scanner'||!scannerStream)return;
+ const msg=document.getElementById('scanmsg');
+ const reader=document.getElementById('qrreader');
+ const video=document.getElementById('camera');
+ const startBtn=document.getElementById('startcam');
+ if(startBtn){startBtn.disabled=true;startBtn.textContent='STARTING CAMERA…'}
+
+ if(window.Html5Qrcode&&reader){
    try{
-    const codes=await detector.detect(video);
-    if(codes[0]){
-     let data;try{data=JSON.parse(codes[0].rawValue)}catch{}
-     const i=people.findIndex(x=>(data?.passId&&x.id===data.passId)||(data?.name&&x.name===data.name));
-     if(i>=0){stopScanner();selected=i;localStorage.setItem(S,String(i));screen='claims';render();return}
-     msg.textContent='QR read, but attendee was not found on this device.'
-    }
+     reader.style.display='block';
+     if(video)video.style.display='none';
+     html5Scanner=new Html5Qrcode('qrreader');
+     msg.textContent='Camera active — point at the QR code.';
+     await html5Scanner.start(
+       {facingMode:'environment'},
+       {fps:10,qrbox:{width:250,height:250},aspectRatio:1.0},
+       decodedText=>handleScannedQr(decodedText,msg),
+       ()=>{}
+     );
+     if(startBtn){startBtn.textContent='CAMERA ACTIVE';startBtn.disabled=true}
+     return;
+   }catch(e){
+     try{if(html5Scanner){await html5Scanner.stop().catch(()=>{});html5Scanner.clear()}}catch{}
+     html5Scanner=null;
+   }
+ }
+
+ if(video&&('BarcodeDetector' in window)){
+   try{
+     if(reader)reader.style.display='none';
+     video.style.display='block';
+     scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+     video.srcObject=scannerStream;
+     await video.play();
+     const detector=new BarcodeDetector({formats:['qr_code']});
+     msg.textContent='Camera active — point at the QR code.';
+     if(startBtn){startBtn.textContent='CAMERA ACTIVE';startBtn.disabled=true}
+     const loop=async()=>{
+       if(screen!=='scanner'||!scannerStream)return;
+       try{
+         const codes=await detector.detect(video);
+         if(codes[0]&&handleScannedQr(codes[0].rawValue,msg))return;
+       }catch{}
+       requestAnimationFrame(loop);
+     };
+     loop();
+     return;
    }catch{}
-   requestAnimationFrame(loop)
-  };loop()
- }catch{msg.textContent='Camera permission was not granted or the camera is unavailable.'}
+ }
+
+ msg.textContent='Camera permission was not granted or this browser cannot scan QR codes. Search the attendee name manually.';
+ if(startBtn){startBtn.disabled=false;startBtn.textContent='TRY CAMERA AGAIN'}
 }
 render();
 })();
