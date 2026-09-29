@@ -246,10 +246,23 @@ function body(){
  </section>`;
 
  if(screen==='export')return pageHeader('Export Documents')+`
- <section class="panel">
-   <p class="lead">Export attendee, attendance and claim status stored on this device.</p>
-   <button id="csv" class="primary full">DOWNLOAD CSV</button>
-   <p class="note">The CSV contains status and timestamps. Use Backup / Restore to preserve actual uploaded document files.</p>
+ <section class="panel exportPanel">
+   <p class="lead">Export the event records and the actual uploaded document files stored on this device.</p>
+
+   <div class="exportBlock">
+     <b>Event Status Report</b>
+     <span>Attendance, Snack, Lunch, Raffle, document verification, notes and timestamps.</span>
+     <button id="csv" class="primary full">DOWNLOAD STATUS CSV</button>
+   </div>
+
+   <div class="exportBlock exportFilesBlock">
+     <b>Actual Uploaded Documents</b>
+     <span>Creates one ZIP file with folders for each attendee and their saved PWD ID, Senior Citizen ID and Authorization Letter files.</span>
+     <button id="exportDocsZip" class="primary full">EXPORT DOCUMENT FILES (.ZIP)</button>
+     <small id="exportDocsStatus">Files are exported directly from this device.</small>
+   </div>
+
+   <p class="note"><b>Offline:</b> once this version has loaded and cached, the ZIP export works from the documents already stored on this device.</p>
  </section>`;
 
  if(screen==='backup')return pageHeader('Backup / Restore')+`
@@ -462,6 +475,7 @@ function wire(){
  },true);
  const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
+ const zipBtn=document.getElementById('exportDocsZip'); if(zipBtn)zipBtn.onclick=exportDocumentFiles;
  const bk=document.getElementById('backupNow'); if(bk)bk.onclick=backupEventData;
  const rf=document.getElementById('restoreFile'); if(rf)rf.onchange=e=>e.target.files?.[0]&&restoreEventData(e.target.files[0]);
  const st=document.getElementById('startcam'); if(st)st.onclick=startScanner;
@@ -493,6 +507,76 @@ function exportCsv(){
  const rows=[['Pass ID','Name','Type','Linked Pass','Linked Name','PWD Verification','Senior ID Verification','Authorization Verification','Verification Notes','Attendance','Check-in Time','Snack','Snack Time','Lunch','Lunch Time','Raffle','Raffle Time'],...people.map(p=>{const l=linkedPerson(p);return[p.id,p.name,p.type,p.linkedId||'',l?.name||'',p.docVerify?.pwd||'Not Submitted',p.docVerify?.senior||'Not Submitted',p.docVerify?.authorization||'Not Submitted',p.docNotes||'',p.attendance?'Checked in':'Not checked in',p.attendanceAt?formatTime(p.attendanceAt):'',p.snack?'Claimed':'Not claimed',p.snackAt?formatTime(p.snackAt):'',p.lunch?'Claimed':'Not claimed',p.lunchAt?formatTime(p.lunchAt):'',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed',p.raffleAt?formatTime(p.raffleAt):'']})];
  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_Attendees_Claims.csv';a.click();URL.revokeObjectURL(a.href)
+}
+
+function safeFilePart(v){return String(v||'').trim().replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').slice(0,90)||'Unknown'}
+function slotFileLabel(slot){
+ const labels={
+   'pwd-front':'PWD_ID_Front',
+   'pwd-back':'PWD_ID_Back',
+   'senior-front':'Senior_Citizen_ID_Front',
+   'senior-back':'Senior_Citizen_ID_Back',
+   'authorization':'Authorization_Letter'
+ };
+ return labels[slot]||safeFilePart(slot);
+}
+function fileExtension(name,type){
+ const m=String(name||'').match(/(\.[A-Za-z0-9]{1,8})$/);
+ if(m)return m[1];
+ if(type==='application/pdf')return '.pdf';
+ if(type==='image/png')return '.png';
+ if(type==='image/jpeg')return '.jpg';
+ return '';
+}
+async function exportDocumentFiles(){
+ const btn=document.getElementById('exportDocsZip');
+ const status=document.getElementById('exportDocsStatus');
+ try{
+   if(!window.JSZip){alert('ZIP exporter is still loading. Please reopen this page once while online, then try again.');return}
+   const docs=await listDocs();
+   if(!docs.length){alert('There are no uploaded document files to export yet.');return}
+   if(btn){btn.disabled=true;btn.textContent='CREATING ZIP…'}
+   if(status)status.textContent=docs.length+' uploaded file'+(docs.length===1?'':'s')+' found. Preparing export…';
+
+   const zip=new JSZip();
+   const root=zip.folder('PDW_2027_Documents');
+   const manifest=[['Pass ID','Name','Type','Document','Original File','Verification Status']];
+
+   for(const d of docs){
+     const key=String(d.key||'');
+     const split=key.indexOf('::');
+     const passId=split>=0?key.slice(0,split):key;
+     const slot=split>=0?key.slice(split+2):'document';
+     const person=people.find(p=>p.id===passId);
+     const personName=person?.name||'Unknown Attendee';
+     const folderName=safeFilePart(passId+' - '+personName);
+     const folder=root.folder(folderName);
+     const label=slotFileLabel(slot);
+     const ext=fileExtension(d.value?.name,d.value?.type);
+     folder.file(label+ext,d.value.blob);
+
+     const group=docGroup(slot);
+     const verify=group?(person?.docVerify?.[group]||'Not Submitted'):'';
+     manifest.push([passId,personName,person?.type||'',label,d.value?.name||'',verify]);
+   }
+
+   const manifestCsv=manifest.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+   root.file('Document_Manifest.csv',manifestCsv);
+
+   const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+   const a=document.createElement('a');
+   a.href=URL.createObjectURL(blob);
+   a.download='PDW_2027_Document_Files_'+new Date().toISOString().slice(0,10)+'.zip';
+   a.click();
+   setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+   if(status)status.textContent=docs.length+' document file'+(docs.length===1?'':'s')+' exported successfully.';
+ }catch(e){
+   console.error(e);
+   alert('Could not export the document ZIP on this device.');
+   if(status)status.textContent='Document export failed. Please try again.';
+ }finally{
+   if(btn){btn.disabled=false;btn.textContent='EXPORT DOCUMENT FILES (.ZIP)'}
+ }
 }
 
 async function backupEventData(){
