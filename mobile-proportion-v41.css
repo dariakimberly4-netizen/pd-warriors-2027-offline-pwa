@@ -1,0 +1,157 @@
+/* v41 — mobile proportion fix from screenshot
+   Use viewport width directly so Android custom tabs do not shrink the UI. */
+
+html.phone-device main{
+  width:100vw!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:16px 0 24px!important;
+}
+
+html.phone-device .brand,
+html.phone-device .rule,
+html.phone-device .offlineBox,
+html.phone-device .newFeatureNotice,
+html.phone-device .moduleList,
+html.phone-device .sectionHead,
+html.phone-device .panel,
+html.phone-device footer{
+  width:92vw!important;
+  max-width:none!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+/* Header */
+html.phone-device .brand{
+  grid-template-columns:72px minmax(0,1fr)!important;
+  gap:12px!important;
+}
+html.phone-device .brandLogo{
+  width:68px!important;
+  height:68px!important;
+}
+html.phone-device .org{
+  font-size:14px!important;
+  line-height:1.2!important;
+}
+html.phone-device .brand h1{
+  font-size:35px!important;
+  line-height:1.02!important;
+  margin:5px 0!important;
+}
+html.phone-device .subtitle{
+  font-size:18px!important;
+}
+html.phone-device .rule{
+  margin-top:18px!important;
+  margin-bottom:20px!important;
+}
+
+/* Login */
+html.phone-device .staffLoginPanel{
+  width:90vw!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  padding:22px 20px!important;
+  border-radius:20px!important;
+}
+html.phone-device .staffLoginPanel h2{
+  font-size:29px!important;
+  margin:9px 0 11px!important;
+}
+html.phone-device .staffLoginPanel p{
+  font-size:15px!important;
+  line-height:1.5!important;
+}
+html.phone-device .staffLoginPanel label{
+  font-size:15px!important;
+}
+html.phone-device .loginBadge{
+  font-size:10px!important;
+}
+html.phone-device .staffLoginPanel .field{
+  min-height:54px!important;
+  font-size:16px!important;
+}
+html.phone-device .staffLoginPanel .primary{
+  min-height:54px!important;
+  font-size:15px!important;
+}
+html.phone-device .loginHint{
+  font-size:13px!important;
+  padding:11px!important;
+}
+
+/* Home/modules */
+html.phone-device .offlineBox{
+  padding:18px 16px 18px 26px!important;
+}
+html.phone-device .offlineTitle{font-size:21px!important}
+html.phone-device .offlineBox p{font-size:16px!important}
+
+html.phone-device .moduleList{
+  grid-template-columns:1fr!important;
+  gap:11px!important;
+}
+html.phone-device .moduleCard{
+  min-height:105px!important;
+  grid-template-columns:56px minmax(0,1fr) 16px!important;
+  gap:10px!important;
+  padding:12px!important;
+}
+html.phone-device .badge{
+  height:56px!important;
+  font-size:14px!important;
+}
+html.phone-device .moduleCopy strong{
+  font-size:21px!important;
+}
+html.phone-device .moduleCopy small{
+  font-size:14px!important;
+}
+
+/* Inner screens */
+html.phone-device .panel{
+  padding:16px!important;
+}
+html.phone-device .sectionHead h2{font-size:24px!important}
+html.phone-device .lead{font-size:16px!important}
+html.phone-device .note{font-size:13px!important}
+html.phone-device .field,
+html.phone-device .verifySelect,
+html.phone-device .notesBox{
+  font-size:15px!important;
+}
+html.phone-device .primary,
+html.phone-device .danger,
+html.phone-device .softBtn{
+  min-height:52px!important;
+  font-size:14px!important;
+}
+
+/* Very small phones */
+@media (max-device-width:390px){
+  html.phone-device .brand,
+  html.phone-device .rule,
+  html.phone-device .offlineBox,
+  html.phone-device .newFeatureNotice,
+  html.phone-device .moduleList,
+  html.phone-device .sectionHead,
+  html.phone-device .panel,
+  html.phone-device footer{
+    width:94vw!important;
+  }
+  html.phone-device .staffLoginPanel{
+    width:92vw!important;
+    padding:19px 16px!important;
+  }
+  html.phone-device .brand{
+    grid-template-columns:62px minmax(0,1fr)!important;
+  }
+  html.phone-device .brandLogo{
+    width:58px!important;
+    height:58px!important;
+  }
+  html.phone-device .brand h1{font-size:31px!important}
+}
