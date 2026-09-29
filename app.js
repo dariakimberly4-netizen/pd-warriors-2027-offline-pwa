@@ -117,7 +117,36 @@ function body(){
  <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
 
  if(screen==='claims')return pageHeader('Claims')+(p?`
- <section class="panel"><div class="passCompact">${passSummary(p)}</div>${claimButtons(p)}</section>`:`
+ <section class="panel">
+   <div class="passCompact">${passSummary(p)}</div>
+
+   <div class="claimDocs">
+     <h3>Upload ID Before Claiming Stub</h3>
+     <p class="note">Staff can upload the attendee's PWD ID or Senior Citizen ID directly on this claim screen.</p>
+
+     <div class="claimDocButtons">
+       <label class="claimDocUpload">
+         <span>UPLOAD PWD ID</span>
+         <small class="docStatus" data-doc-status="pwd-front">CHECKING…</small>
+         <input hidden class="docInput" data-slot="pwd-front" type="file" accept="image/*,.pdf,application/pdf">
+       </label>
+
+       <label class="claimDocUpload">
+         <span>UPLOAD SENIOR ID</span>
+         <small class="docStatus" data-doc-status="senior-front">CHECKING…</small>
+         <input hidden class="docInput" data-slot="senior-front" type="file" accept="image/*,.pdf,application/pdf">
+       </label>
+     </div>
+
+     <div class="claimDocNames">
+       <small data-doc-name="pwd-front">PWD ID: No file saved</small>
+       <small data-doc-name="senior-front">Senior ID: No file saved</small>
+     </div>
+   </div>
+
+   <div class="claimDivider"></div>
+   ${claimButtons(p)}
+ </section>`:`
  <section class="panel empty">Select an attendee first.</section>`);
 
  if(screen==='scanner')return pageHeader('QR Scanner')+`
@@ -182,7 +211,10 @@ async function refreshDocStatuses(){
    const view=document.querySelector('[data-view-slot="'+slot+'"]');
    const del=document.querySelector('[data-delete-slot="'+slot+'"]');
    if(st){st.textContent=rec?'SAVED':'NOT SUBMITTED';st.classList.toggle('saved',!!rec)}
-   if(nm)nm.textContent=rec?rec.name:'No file saved';
+   if(nm){
+   const prefix=slot==='pwd-front'?'PWD ID: ':slot==='senior-front'?'Senior ID: ':'';
+   nm.textContent=prefix+(rec?rec.name:'No file saved');
+ }
    if(view)view.disabled=!rec;
    if(del)del.disabled=!rec;
  }
@@ -227,7 +259,7 @@ function wire(){
  });
  document.querySelectorAll('[data-view-slot]').forEach(b=>b.onclick=()=>viewDoc(b.dataset.viewSlot));
  document.querySelectorAll('[data-delete-slot]').forEach(b=>b.onclick=()=>removeDoc(b.dataset.deleteSlot));
- if(screen==='documents'&&selected!==null)setTimeout(refreshDocStatuses,0);
+ if((screen==='documents'||screen==='claims')&&selected!==null)setTimeout(refreshDocStatuses,0);
  const add=document.getElementById('addwalk'); if(add)add.onclick=()=>{
   const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;
   if(!n)return alert('Enter a name.');
