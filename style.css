@@ -793,3 +793,46 @@ main{
   .moduleCopy small{font-size:13px!important}
   .attendeeFilters{grid-template-columns:1fr!important}
 }
+
+/* v36 — mobile login fills the screen width correctly */
+.staffLoginPanel{
+  width:min(100%,560px)!important;
+}
+@media (max-width:620px){
+  main{padding-left:12px!important;padding-right:12px!important}
+  .staffLoginPanel{
+    width:100%!important;
+    max-width:none!important;
+    margin:14px 0 0!important;
+    padding:18px 16px!important;
+    border-radius:18px!important;
+  }
+  .staffLoginPanel h2{
+    font-size:28px!important;
+    line-height:1.15!important;
+  }
+  .staffLoginPanel p{
+    font-size:16px!important;
+    line-height:1.45!important;
+  }
+  .staffLoginPanel label{
+    font-size:16px!important;
+  }
+  .staffLoginPanel .field{
+    width:100%!important;
+    min-height:56px!important;
+    font-size:17px!important;
+  }
+  .staffLoginPanel .primary{
+    width:100%!important;
+    min-height:58px!important;
+    font-size:17px!important;
+  }
+  .loginHint{
+    font-size:15px!important;
+    padding:11px 10px!important;
+  }
+}
+@media (max-width:380px){
+  .staffLoginPanel{padding:16px 13px!important}
+}
