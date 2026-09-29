@@ -1,0 +1,239 @@
+/* v37 — real-phone override.
+   This is applied from JS using the physical device screen, so it still works
+   inside mobile browsers/custom tabs that expose a desktop-sized CSS viewport. */
+
+html.phone-device,
+html.phone-device body{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  zoom:1!important;
+}
+html.phone-device body{
+  font-size:18px!important;
+  line-height:1.5!important;
+}
+html.phone-device main{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:18px 16px 24px!important;
+}
+
+/* Header fills the phone width and stays readable */
+html.phone-device .brand{
+  display:grid!important;
+  grid-template-columns:78px minmax(0,1fr)!important;
+  gap:13px!important;
+  align-items:center!important;
+}
+html.phone-device .brandLogo{
+  width:74px!important;
+  height:74px!important;
+}
+html.phone-device .brandText{min-width:0!important}
+html.phone-device .org{
+  font-size:15px!important;
+  line-height:1.25!important;
+  letter-spacing:.7px!important;
+}
+html.phone-device .brand h1{
+  font-size:36px!important;
+  line-height:1.02!important;
+  margin:6px 0!important;
+}
+html.phone-device .subtitle{
+  font-size:20px!important;
+  line-height:1.22!important;
+}
+html.phone-device .rule{
+  height:3px!important;
+  margin:20px 0 22px!important;
+}
+
+/* Login should use almost the full phone width */
+html.phone-device .staffLoginPanel{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:24px 20px!important;
+  border-radius:20px!important;
+}
+html.phone-device .staffLoginPanel h2{
+  font-size:30px!important;
+  line-height:1.1!important;
+  margin:10px 0 12px!important;
+}
+html.phone-device .staffLoginPanel p{
+  font-size:17px!important;
+  line-height:1.45!important;
+}
+html.phone-device .staffLoginPanel label{
+  font-size:17px!important;
+  margin-top:15px!important;
+}
+html.phone-device .loginBadge{
+  font-size:12px!important;
+  padding:7px 10px!important;
+}
+html.phone-device .staffLoginPanel .field{
+  width:100%!important;
+  min-height:58px!important;
+  font-size:18px!important;
+  padding:0 15px!important;
+}
+html.phone-device .staffLoginPanel .primary{
+  width:100%!important;
+  min-height:58px!important;
+  font-size:17px!important;
+}
+html.phone-device .loginHint{
+  font-size:16px!important;
+  padding:12px!important;
+  margin-top:16px!important;
+}
+
+/* Home/modules */
+html.phone-device .offlineBox{
+  padding:20px 18px 20px 28px!important;
+  margin-bottom:18px!important;
+}
+html.phone-device .offlineTitle{font-size:22px!important}
+html.phone-device .offlineBox p{font-size:17px!important}
+html.phone-device .moduleList{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:13px!important;
+}
+html.phone-device .moduleCard{
+  width:100%!important;
+  min-width:0!important;
+  min-height:116px!important;
+  grid-template-columns:62px minmax(0,1fr) 18px!important;
+  gap:12px!important;
+  padding:14px 13px!important;
+  border-radius:18px!important;
+}
+html.phone-device .badge{
+  height:62px!important;
+  border-radius:16px!important;
+  font-size:16px!important;
+}
+html.phone-device .moduleCopy{gap:5px!important}
+html.phone-device .moduleCopy strong{
+  font-size:23px!important;
+  line-height:1.12!important;
+}
+html.phone-device .moduleCopy small{
+  font-size:16px!important;
+  line-height:1.35!important;
+}
+html.phone-device .chev{font-size:32px!important}
+
+/* All working screens */
+html.phone-device .sectionHead h2{font-size:27px!important}
+html.phone-device .panel{
+  width:100%!important;
+  min-width:0!important;
+  padding:18px!important;
+  border-radius:18px!important;
+}
+html.phone-device .lead{font-size:18px!important}
+html.phone-device .note{font-size:15px!important}
+html.phone-device .field,
+html.phone-device .verifySelect,
+html.phone-device .notesBox{
+  width:100%!important;
+  min-width:0!important;
+  font-size:17px!important;
+}
+html.phone-device .primary,
+html.phone-device .danger,
+html.phone-device .softBtn{
+  min-height:56px!important;
+  font-size:16px!important;
+  padding:8px 14px!important;
+}
+html.phone-device .personRow,
+html.phone-device .selectedProceed,
+html.phone-device .selectedBanner,
+html.phone-device .profileHero,
+html.phone-device .staffBar,
+html.phone-device .winnerRow,
+html.phone-device .auditRow{
+  flex-direction:column!important;
+  align-items:stretch!important;
+}
+html.phone-device .split,
+html.phone-device .profileQuick,
+html.phone-device .reportActions,
+html.phone-device .passDownloadActions,
+html.phone-device .supervisorActions,
+html.phone-device .docExportButtons,
+html.phone-device .claimDocButtons,
+html.phone-device .claimDocNames,
+html.phone-device .summaryGrid,
+html.phone-device .reportGrid,
+html.phone-device .claims{
+  grid-template-columns:1fr!important;
+}
+html.phone-device .verifyRow{grid-template-columns:1fr!important}
+html.phone-device .personRow .select,
+html.phone-device .personRow .selectedBtn,
+html.phone-device .selectedProceed .primary,
+html.phone-device .selectedBanner .primary{width:100%!important}
+
+/* Filters remain readable instead of becoming tiny */
+html.phone-device .attendeeFilters{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:8px!important;
+}
+html.phone-device .filterBtn{
+  width:100%!important;
+  min-height:48px!important;
+  font-size:13px!important;
+  padding:6px 8px!important;
+}
+
+/* QR/doc screens */
+html.phone-device .qr img,
+html.phone-device .qr canvas{
+  width:min(100%,280px)!important;
+  height:auto!important;
+}
+html.phone-device .camera,
+html.phone-device .qrReader{
+  width:100%!important;
+  max-width:100%!important;
+}
+html.phone-device .docUploadTop{
+  flex-direction:column!important;
+  align-items:flex-start!important;
+}
+html.phone-device .docActions{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+}
+html.phone-device .docUploadBtn{
+  grid-column:1/-1!important;
+}
+html.phone-device .docUploadBtn,
+html.phone-device .docViewBtn,
+html.phone-device .docDeleteBtn{
+  width:100%!important;
+}
+
+/* Small phones */
+@media (max-device-width:390px){
+  html.phone-device main{padding:14px 11px 20px!important}
+  html.phone-device .brand{grid-template-columns:66px minmax(0,1fr)!important;gap:10px!important}
+  html.phone-device .brandLogo{width:62px!important;height:62px!important}
+  html.phone-device .org{font-size:13px!important}
+  html.phone-device .brand h1{font-size:32px!important}
+  html.phone-device .subtitle{font-size:18px!important}
+  html.phone-device .staffLoginPanel{padding:20px 16px!important}
+  html.phone-device .attendeeFilters{grid-template-columns:1fr!important}
+}
