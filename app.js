@@ -30,8 +30,8 @@ function ensureLinks(){
 }
 ensureLinks();
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
-let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null;
-const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', STAFF_PIN='2027';
+let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null, readinessResults=null;
+const STAFF_SESSION='pdw-staff-session-v1', STAFF_NAMES='pdw-staff-names-v1', AUDIT_KEY='pdw-audit-v1', RAFFLE_WINNERS_KEY='pdw-raffle-winners-v1', LAST_BACKUP_KEY='pdw-last-backup-v1', STAFF_PIN='2027';
 let currentStaff=null, staffNames=[], auditLog=[], raffleWinners=[];
 try{currentStaff=JSON.parse(sessionStorage.getItem(STAFF_SESSION)||'null')}catch{}
 try{staffNames=JSON.parse(localStorage.getItem(STAFF_NAMES)||'[]')}catch{}
@@ -50,7 +50,7 @@ function addAudit(action,person=null,detail=''){
  if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
 }
-const NEW_KEY='pdw-new-seen-v24';
+const NEW_KEY='pdw-new-seen-v25';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -160,6 +160,75 @@ function eventStats(){
 }
 function statCard(label,value,note=''){return `<div class="reportStat"><b>${value}</b><span>${label}</span>${note?`<small>${note}</small>`:''}</div>`}
 
+function normalizeName(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ')}
+function duplicateIssues(list){
+ const issues=[],ids=new Map(),names=new Map();
+ list.forEach(p=>{
+   const id=String(p.id||'').trim().toLowerCase();
+   const nk=(p.type||'')+'::'+normalizeName(p.name);
+   if(id){
+     if(ids.has(id))issues.push('Duplicate Pass ID: '+p.id+' ('+ids.get(id)+' / '+p.name+')');
+     else ids.set(id,p.name);
+   }
+   if(normalizeName(p.name)){
+     if(names.has(nk))issues.push('Duplicate '+p.type+' name: '+p.name);
+     else names.set(nk,p.name);
+   }
+ });
+ return [...new Set(issues)];
+}
+function nextWalkInId(type){
+ const prefix=type==='Companion'?'C':'P';
+ let n=people.filter(p=>p.type===type).length+1,id='';
+ do{id=prefix+'-'+String(n++).padStart(4,'0')}while(people.some(p=>String(p.id).toLowerCase()===id.toLowerCase()));
+ return id;
+}
+function readinessRow(id,label,note=''){
+ return `<div class="readyRow" data-ready-row="${id}"><span class="readyDot">…</span><div><b>${label}</b><small>${note||'Checking…'}</small></div></div>`
+}
+function renderReadinessResults(){
+ if(!readinessResults)return;
+ for(const r of readinessResults){
+   const el=document.querySelector('[data-ready-row="'+r.id+'"]');if(!el)continue;
+   el.classList.toggle('readyOk',r.ok===true);
+   el.classList.toggle('readyWarn',r.ok==='warn');
+   el.classList.toggle('readyBad',r.ok===false);
+   const dot=el.querySelector('.readyDot'),small=el.querySelector('small');
+   dot.textContent=r.ok===true?'✓':r.ok==='warn'?'!':'×';
+   small.textContent=r.note;
+ }
+ const summary=document.getElementById('readySummary');
+ if(summary){
+   const bad=readinessResults.filter(r=>r.ok===false).length;
+   const warn=readinessResults.filter(r=>r.ok==='warn').length;
+   summary.className='readySummary '+(bad?'readyBad':warn?'readyWarn':'readyOk');
+   summary.innerHTML=bad?'<b>NOT READY YET</b><span>Fix the red items before event day.</span>':warn?'<b>READY WITH NOTES</b><span>Core offline use is ready. Review the yellow items.</span>':'<b>EVENT DEVICE READY</b><span>Core offline checks passed on this device.</span>';
+ }
+}
+async function runReadinessCheck(){
+ const results=[];
+ let swOk=false,cacheOk=false,dbOk=false;
+ try{swOk=!!navigator.serviceWorker?.controller}catch{}
+ results.push({id:'sw',ok:swOk,note:swOk?'Offline service worker is active.':'Open this site online once and refresh so offline mode can activate.'});
+ try{
+   if('caches' in window){const keys=await caches.keys();cacheOk=keys.some(k=>k==='pdw-2027-v25')}
+ }catch{}
+ results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v25 app files are cached.':'Current version is not fully cached yet. Open it online once.'});
+ results.push({id:'attendees',ok:people.length>0,note:people.length?people.length+' attendee record(s) saved locally.':'No attendee list is saved on this device.'});
+ try{const db=await openDocDb();dbOk=!!db;db.close()}catch{}
+ results.push({id:'docs',ok:dbOk,note:dbOk?'Local document storage is available.':'Local document storage could not be opened.'});
+ results.push({id:'excel',ok:!!window.XLSX,note:window.XLSX?'Excel import library is loaded/cached.':'Excel import library is unavailable offline on this device.'});
+ results.push({id:'qrgen',ok:!!window.QRCode,note:window.QRCode?'Digital pass QR generation is available.':'QR generation library is unavailable offline.'});
+ const scanOk=('BarcodeDetector' in window);
+ results.push({id:'qrscan',ok:scanOk?true:'warn',note:scanOk?'Camera QR detection is supported.':'Camera QR detection is not supported here; staff can still search names manually.'});
+ results.push({id:'zip',ok:!!window.JSZip,note:window.JSZip?'Document ZIP export is available.':'ZIP export library is unavailable offline.'});
+ const lastBackup=localStorage.getItem(LAST_BACKUP_KEY);
+ results.push({id:'backup',ok:lastBackup?true:'warn',note:lastBackup?'Last backup: '+formatTime(lastBackup):'No backup has been created on this device yet.'});
+ readinessResults=results;
+ renderReadinessResults();
+ addAudit('Ran offline readiness check',null,results.filter(r=>r.ok===false).length+' failed');
+}
+
 const modules=[
  ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
  ['database','DB','Attendee Database','Search imported names by first or last name'],
@@ -171,6 +240,7 @@ const modules=[
  ['raffle','DRAW','Raffle Draw','Draw a winner from eligible participants only'],
  ['export','DOC','Export Documents','Export document and claim status offline'],
  ['report','RPT','End-of-Event Report','Live totals for attendance, claims, documents and raffle'],
+ ['readiness','READY','Offline Readiness Check','Test this device before event day'],
  ['backup','SAFE','Backup / Restore','Save or restore all offline event data'],
  ['audit','LOG','Staff Activity','Offline audit trail of staff actions']
 ];
@@ -228,9 +298,9 @@ function home(){
  <div class="newFeatureNotice"><b>NEW FEATURES</b><span>Gold-highlighted items are new. The highlight disappears after the first click.</span></div>
  <section class="moduleList">
    ${modules.map(([id,badge,title,desc])=>`
-    <button class="moduleCard ${((id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
+    <button class="moduleCard ${((id==='readiness'&&isNew('readiness'))||(id==='raffle'&&isNew('raffle-safe'))||(id==='report'&&isNew('event-report'))||(id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='readiness'?'readiness':id==='raffle'?'raffle-safe':id==='report'?'event-report':id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
+      <span class="moduleCopy"><strong>${title}${id==='readiness'&&isNew('readiness')?'<span class="newPill">NEW CHECK</span>':id==='raffle'&&isNew('raffle-safe')?'<span class="newPill">SAFE DRAW</span>':id==='report'&&isNew('event-report')?'<span class="newPill">NEW REPORT</span>':id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -478,6 +548,25 @@ function body(){
    </div>
  </section>`;
 
+ if(screen==='readiness')return pageHeader('Offline Readiness Check')+`
+ <section class="panel readinessPanel">
+   <p class="lead">Run this check on the actual phone, tablet, or laptop that will be used during the event.</p>
+   <div id="readySummary" class="readySummary"><b>CHECK NOT RUN YET</b><span>Tap the button below.</span></div>
+   <div class="readyList">
+     ${readinessRow('sw','Offline App','Service worker / offline shell')}
+     ${readinessRow('cache','Current Version Cached','v25 app files')}
+     ${readinessRow('attendees','Attendee List','Participant and companion records')}
+     ${readinessRow('docs','Local Document Storage','PWD, Senior ID and Authorization files')}
+     ${readinessRow('excel','Excel Import','Offline spreadsheet import')}
+     ${readinessRow('qrgen','QR Pass Generator','Digital pass generation')}
+     ${readinessRow('qrscan','QR Camera Scanner','Camera scanning support')}
+     ${readinessRow('zip','Document ZIP Export','Download all uploaded files')}
+     ${readinessRow('backup','Backup File','Recent event backup')}
+   </div>
+   <button id="runReady" class="primary full">RUN OFFLINE READINESS CHECK</button>
+   <p class="note">For the strongest test, run this once online, then switch the device to airplane mode and open the system again.</p>
+ </section>`;
+
  if(screen==='backup')return pageHeader('Backup / Restore')+`
  <section class="panel">
    <p class="lead">Create one offline backup file containing attendees, attendance, stub claims, timestamps, and uploaded documents.</p>
@@ -640,6 +729,8 @@ function wire(){
  const logout=document.getElementById('logoutStaff');
  if(logout)logout.onclick=()=>{addAudit('Staff logout');currentStaff=null;sessionStorage.removeItem(STAFF_SESSION);screen='home';stopScanner();render()};
  const ex=document.getElementById('excel'); if(ex)ex.onchange=e=>e.target.files[0]&&importExcel(e.target.files[0]);
+ const runReady=document.getElementById('runReady'); if(runReady)runReady.onclick=runReadinessCheck;
+ if(screen==='readiness'&&readinessResults)setTimeout(renderReadinessResults,0);
  const openPass=document.getElementById('openPass'); if(openPass)openPass.onclick=()=>setScreen('pass');
  const profileDocs=document.getElementById('profileDocs'); if(profileDocs)profileDocs.onclick=()=>setScreen('documents');
  const profilePass=document.getElementById('profilePass'); if(profilePass)profilePass.onclick=()=>setScreen('pass');
@@ -675,10 +766,15 @@ function wire(){
  const add=document.getElementById('addwalk'); if(add)add.onclick=()=>{
   const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;
   if(!n)return alert('Enter a name.');
-  const count=people.filter(x=>x.type===t).length+1;
-  people.push({id:passId(t,count),name:n,type:t,linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''});
+  const duplicate=people.find(p=>p.type===t&&normalizeName(p.name)===normalizeName(n));
+  if(duplicate){
+    addAudit('Duplicate walk-in blocked',duplicate,n);
+    return alert('DUPLICATE WARNING\n\n'+n+' is already registered as a '+t+' with Pass '+duplicate.id+'.\n\nNo duplicate was added.');
+  }
+  const id=nextWalkInId(t);
+  people.push({id,name:n,type:t,linkedId:'',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:'',docVerify:{pwd:'Not Submitted',senior:'Not Submitted',authorization:'Not Submitted'},docNotes:''});
   addAudit('Walk-in registered',people[people.length-1]);
-  save();alert('Walk-in saved offline.');render()
+  save();alert('Walk-in saved offline. Pass '+id);render()
  };
  const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
  bindSelect();
@@ -757,7 +853,12 @@ async function importExcel(file){
    if(pObj)a.push(pObj);if(cObj)a.push(cObj)
   });
   if(!a.length)return alert('No participant names found below the header.');
-  people=normalize(a);ensureLinks();selected=null;addAudit('Excel attendee list imported',null,a.length+' people');save();localStorage.removeItem(S);alert(a.length+' people imported and linked offline.');render()
+  const dupes=duplicateIssues(a);
+  if(dupes.length){
+    addAudit('Excel import blocked for duplicates',null,dupes.length+' duplicate issue(s)');
+    return alert('DUPLICATE WARNING\n\nThe Excel file was NOT imported.\n\n'+dupes.slice(0,8).join('\n')+(dupes.length>8?'\n…plus '+(dupes.length-8)+' more.':''));
+  }
+  people=normalize(a);ensureLinks();selected=null;addAudit('Excel attendee list imported',null,a.length+' people');save();localStorage.removeItem(S);alert(a.length+' people imported and linked offline. No duplicates found.');render()
  }catch(e){alert('Could not read this Excel file.')}
 }
 
@@ -906,7 +1007,7 @@ async function backupEventData(){
    packedDocs.push({key:d.key,name:d.value.name,type:d.value.type,size:d.value.size,updated:d.value.updated,data:await blobToDataURL(d.value.blob)});
   }
   const payload={version:2,event:'PDWPH-GET-TOGETHER-2027',exportedAt:new Date().toISOString(),people,selected,raffleWinners,auditLog,documents:packedDocs};
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:'application/json'}));a.download='PDW_2027_OFFLINE_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:'application/json'}));a.download='PDW_2027_OFFLINE_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);localStorage.setItem(LAST_BACKUP_KEY,new Date().toISOString());addAudit('Event backup created');
  }catch{alert('Could not create the backup file.')}
 }
 async function restoreEventData(file){
