@@ -8,7 +8,7 @@ try{
     document.documentElement.classList.add('phone-device');
   }
 }catch{}
-const APP_VERSION='47';
+const APP_VERSION='48';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[];
 const normalize=a=>a.map((p,i)=>({
@@ -336,40 +336,44 @@ function shell(content){
 function staffLogin(){
  const recent=[...new Set(staffNames)].slice(0,8);
  return `
- <section class="staffLoginPanel loginRedesign">
-   <div class="loginTop">
-     <div class="loginMark">27</div>
-     <div class="loginTopCopy">
-       <span class="loginEyebrow">GET TOGETHER 2027</span>
-       <h2>Staff Access</h2>
-       <p>Offline event operations on this device.</p>
+ <section class="staffLoginPanel loginPortrait">
+   <div class="portraitAccent"></div>
+
+   <div class="portraitHead">
+     <div class="portraitIcon">27</div>
+     <div>
+       <span class="portraitKicker">OFFLINE EVENT ACCESS</span>
+       <h2>Staff Login</h2>
+       <p>Get Together 2027</p>
      </div>
    </div>
 
-   <div class="loginDivider"></div>
+   <div class="portraitStatus">
+     <span class="offlineDot"></span>
+     <span>Ready on this device — internet not required</span>
+   </div>
 
-   <div class="loginFormSurface">
-     <label class="loginFieldLabel">
-       <span>STAFF NAME</span>
-       <input id="staffName" class="field" list="recentStaff" autocomplete="off" placeholder="Enter your name">
+   <div class="portraitForm">
+     <label class="portraitLabel">
+       <span>Staff Name</span>
+       <input id="staffName" class="field" list="recentStaff" autocomplete="off" placeholder="Enter staff name">
        <datalist id="recentStaff">${recent.map(n=>`<option value="${esc(n)}"></option>`).join('')}</datalist>
      </label>
 
-     <label class="loginFieldLabel">
-       <span>4-DIGIT EVENT PIN</span>
+     <label class="portraitLabel">
+       <span>4-Digit PIN</span>
        <input id="staffPin" class="field" inputmode="numeric" maxlength="4" type="password" placeholder="••••">
      </label>
 
-     <button id="staffLoginBtn" class="primary full loginEnterBtn">
-       <span>ENTER EVENT SYSTEM</span><span class="loginArrow">›</span>
+     <button id="staffLoginBtn" class="primary full portraitLoginBtn">
+       LOGIN OFFLINE
      </button>
      <p id="staffLoginMsg" class="loginMsg"></p>
    </div>
 
-   <div class="loginBottom">
-     <span class="offlineDot"></span>
-     <span><b>OFFLINE READY</b><small>Data stays on this device</small></span>
-     <span class="pinChip">PIN <b>2027</b></span>
+   <div class="portraitPin">
+     <span>EVENT PIN</span>
+     <strong>2027</strong>
    </div>
  </section>`;
 }
