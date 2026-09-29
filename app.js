@@ -1,5 +1,5 @@
 (()=> {
-const APP_VERSION='31';
+const APP_VERSION='32';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[
  {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
@@ -58,7 +58,7 @@ function addAudit(action,person=null,detail=''){
  if(auditLog.length>5000)auditLog=auditLog.slice(0,5000);
  localStorage.setItem(AUDIT_KEY,JSON.stringify(auditLog));
 }
-const NEW_KEY='pdw-new-seen-v31';
+const NEW_KEY='pdw-new-seen-v32';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -256,7 +256,7 @@ const modules=[
  ['database','DB','Attendee Database','Search imported names by first or last name'],
  ['profile','NEW','Participant Profile','Summary, linked companion and document verification'],
  ['documents','2','Documents','Step 2 • Collect PWD / Senior ID / authorization'],
- ['downloads','DL','Download All Documents','Download PWD, Senior ID and Authorization files'],
+ ['downloads','DL','DOWNLOAD ALL DOCUMENTS','PWD • Senior ID • Authorization • All files'],
  ['pass','3','Digital Passes','Step 3 • Generate individual QR codes'],
  ['scanner','4','QR Scanner','Step 4 • Scan participant or companion QR'],
  ['claims','5','Claims','Step 5 • Check-in + Snack + Lunch + Raffle claims'],
@@ -455,6 +455,21 @@ function body(){
    </section>
  </section>`:`
  <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
+
+ if(screen==='downloads')return pageHeader('Download All Documents')+`
+ <section class="panel downloadAllPanel">
+   <div class="downloadHero">
+     <b>DOWNLOAD ALL DOCUMENTS</b>
+     <span>Download the actual uploaded files stored on this device. No attendee selection is required.</span>
+   </div>
+   <div class="docExportButtons downloadAllButtons">
+     <button type="button" class="exportDocBtn" data-export-docs="pwd">DOWNLOAD ALL PWD FILES</button>
+     <button type="button" class="exportDocBtn" data-export-docs="senior">DOWNLOAD ALL SENIOR ID FILES</button>
+     <button type="button" class="exportDocBtn" data-export-docs="authorization">DOWNLOAD ALL AUTHORIZATION LETTERS</button>
+     <button type="button" class="exportDocBtn exportAll" data-export-docs="all">DOWNLOAD ALL DOCUMENTS</button>
+   </div>
+   <p class="note"><b>Offline:</b> ZIP files are created from the documents saved locally on this device.</p>
+ </section>`;
 
  if(screen==='pass')return pageHeader('Digital Passes')+(p?passCard(p):`
  <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
