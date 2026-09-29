@@ -8,7 +8,7 @@ try{
     document.documentElement.classList.add('phone-device');
   }
 }catch{}
-const APP_VERSION='44';
+const APP_VERSION='45';
 const K='pdw-people-v4', S='pdw-selected-v4';
 const defaultPeople=[];
 const normalize=a=>a.map((p,i)=>({
