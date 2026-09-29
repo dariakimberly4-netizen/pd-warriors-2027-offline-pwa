@@ -4,7 +4,7 @@ const defaultPeople=[
  {id:'P-0001',name:'Maria Santos',type:'Participant',snack:false,lunch:false,raffle:false},
  {id:'C-0001',name:'Jose Santos',type:'Companion',snack:false,lunch:false,raffle:null}
 ];
-const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),snack:!!p.snack,lunch:!!p.lunch,raffle:p.type==='Companion'?null:!!p.raffle}));
+const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),attendance:!!p.attendance,attendanceAt:p.attendanceAt||'',snack:!!p.snack,snackAt:p.snackAt||'',lunch:!!p.lunch,lunchAt:p.lunchAt||'',raffle:p.type==='Companion'?null:!!p.raffle,raffleAt:p.type==='Companion'?'':(p.raffleAt||'')}));
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null;
@@ -17,6 +17,10 @@ async function putDoc(key,file){const db=await openDocDb();return new Promise((r
 async function getDoc(key){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readonly');const r=tx.objectStore(DOC_STORE).get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)})}
 async function deleteDoc(key){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
 const docKey=(person,slot)=>person.id+'::'+slot;
+async function listDocs(){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readonly');const store=tx.objectStore(DOC_STORE);const out=[];const r=store.openCursor();r.onsuccess=()=>{const c=r.result;if(c){out.push({key:c.key,value:c.value});c.continue()}else resolve(out)};r.onerror=()=>reject(r.error)})}
+async function clearDocs(){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).clear();tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
+function blobToDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
+function dataURLToBlob(dataURL){const [head,data]=dataURL.split(',');const mime=(head.match(/data:(.*?);base64/)||[])[1]||'application/octet-stream';const bin=atob(data);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type:mime})}
 const modules=[
  ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
  ['database','DB','Attendee Database','Search imported names by first or last name'],
@@ -25,7 +29,8 @@ const modules=[
  ['scanner','4','QR Scanner','Step 4 • Scan participant or companion QR'],
  ['claims','5','Claims','Step 5 • Tap Snack, Lunch or Raffle to mark CLAIMED'],
  ['raffle','DRAW','Raffle Draw','Draw a winner from eligible participants only'],
- ['export','DOC','Export Documents','Export document and claim status offline']
+ ['export','DOC','Export Documents','Export document and claim status offline'],
+ ['backup','SAFE','Backup / Restore','Save or restore all offline event data']
 ];
 
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
@@ -166,9 +171,18 @@ function body(){
 
  if(screen==='export')return pageHeader('Export Documents')+`
  <section class="panel">
-   <p class="lead">Export attendee and claim status stored on this device.</p>
+   <p class="lead">Export attendee, attendance and claim status stored on this device.</p>
    <button id="csv" class="primary full">DOWNLOAD CSV</button>
-   <p class="note">The CSV does not contain actual PWD ID, Senior Citizen ID, or authorization-letter image files.</p>
+   <p class="note">The CSV contains status and timestamps. Use Backup / Restore to preserve actual uploaded document files.</p>
+ </section>`;
+
+ if(screen==='backup')return pageHeader('Backup / Restore')+`
+ <section class="panel">
+   <p class="lead">Create one offline backup file containing attendees, attendance, stub claims, timestamps, and uploaded documents.</p>
+   <button id="backupNow" class="primary full">BACKUP EVENT DATA</button>
+   <div class="divider"></div>
+   <label class="danger full restoreLabel">RESTORE BACKUP<input id="restoreFile" hidden type="file" accept=".json,application/json"></label>
+   <p class="note"><b>Important:</b> restoring replaces the event data currently saved on this device.</p>
  </section>`;
  return '';
 }
@@ -241,12 +255,18 @@ function passCard(p){return `
    <div class="qrLabel">QR CODE GENERATED</div>
    <button id="gotoclaims" class="primary full">OPEN CLAIMS</button>
  </section>`}
+function formatTime(v){if(!v)return'';try{return new Date(v).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}catch{return v}}
 function claimButtons(p){
- const ks=['snack','lunch',...(p.raffle===null?[]:['raffle'])];
- return `<div class="claims">${ks.map(k=>`
-  <button class="claim ${p[k]?'claimed':''}" data-k="${k}" ${p[k]?'disabled':''}>
-   <span>${k.toUpperCase()}</span><small>${p[k]?'✓ CLAIMED':'TAP TO CLAIM'}</small>
-  </button>`).join('')}</div>`;
+ const ks=['attendance','snack','lunch',...(p.raffle===null?[]:['raffle'])];
+ return `<div class="claims">${ks.map(k=>{
+   const label=k==='attendance'?'CHECK-IN':k.toUpperCase();
+   const done=!!p[k], t=p[k+'At']||'';
+   return `<button class="claim ${done?'claimed':''}" data-k="${k}" ${done?'disabled':''}>
+     <span>${label}</span>
+     <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED'):'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
+     ${done&&t?`<em>${formatTime(t)}</em>`:''}
+   </button>`
+ }).join('')}</div>`;
 }
 
 function wire(){
@@ -264,7 +284,7 @@ function wire(){
   const n=document.getElementById('walkname').value.trim(),t=document.getElementById('walktype').value;
   if(!n)return alert('Enter a name.');
   const count=people.filter(x=>x.type===t).length+1;
-  people.push({id:passId(t,count),name:n,type:t,snack:false,lunch:false,raffle:t==='Companion'?null:false});
+  people.push({id:passId(t,count),name:n,type:t,attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:t==='Companion'?null:false,raffleAt:''});
   save();alert('Walk-in saved offline.');render()
  };
  const s=document.getElementById('search'); if(s)s.oninput=e=>{query=e.target.value;document.getElementById('results').innerHTML=results();bindSelect()};
@@ -276,9 +296,11 @@ function wire(){
   else el.textContent='QR library loading…';
  }
  const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
- document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(selected==null)return;people[selected][k]=true;save();render()});
+ document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(selected==null)return;people[selected][k]=true;people[selected][k+'At']=new Date().toISOString();save();render()});
  const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
+ const bk=document.getElementById('backupNow'); if(bk)bk.onclick=backupEventData;
+ const rf=document.getElementById('restoreFile'); if(rf)rf.onchange=e=>e.target.files?.[0]&&restoreEventData(e.target.files[0]);
  const st=document.getElementById('startcam'); if(st)st.onclick=startScanner;
 }
 function bindSelect(){document.querySelectorAll('.select').forEach(b=>b.onclick=()=>selectPerson(Number(b.dataset.i)))}
@@ -293,8 +315,8 @@ async function importExcel(file){
   const a=[];let pn=0,cn=0;
   m.slice(hi+1).forEach(r=>{
    const pnme=String(r[pc]||'').trim(),cnme=cc>=0?String(r[cc]||'').trim():'';
-   if(pnme){pn++;a.push({id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',snack:false,lunch:false,raffle:false})}
-   if(cnme){cn++;a.push({id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',snack:false,lunch:false,raffle:null})}
+   if(pnme){pn++;a.push({id:passId('Participant',pn,pid>=0?r[pid]:''),name:pnme,type:'Participant',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:false,raffleAt:''})}
+   if(cnme){cn++;a.push({id:passId('Companion',cn,cid>=0?r[cid]:''),name:cnme,type:'Companion',attendance:false,attendanceAt:'',snack:false,snackAt:'',lunch:false,lunchAt:'',raffle:null,raffleAt:''})}
   });
   if(!a.length)return alert('No participant names found below the header.');
   people=a;selected=null;save();localStorage.removeItem(S);alert(a.length+' people imported and saved offline.');render()
@@ -302,9 +324,37 @@ async function importExcel(file){
 }
 
 function exportCsv(){
- const rows=[['Pass ID','Name','Type','Snack','Lunch','Raffle'],...people.map(p=>[p.id,p.name,p.type,p.snack?'Claimed':'Not claimed',p.lunch?'Claimed':'Not claimed',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed'])];
+ const rows=[['Pass ID','Name','Type','Attendance','Check-in Time','Snack','Snack Time','Lunch','Lunch Time','Raffle','Raffle Time'],...people.map(p=>[p.id,p.name,p.type,p.attendance?'Checked in':'Not checked in',p.attendanceAt?formatTime(p.attendanceAt):'',p.snack?'Claimed':'Not claimed',p.snackAt?formatTime(p.snackAt):'',p.lunch?'Claimed':'Not claimed',p.lunchAt?formatTime(p.lunchAt):'',p.raffle===null?'Not eligible':p.raffle?'Claimed':'Not claimed',p.raffleAt?formatTime(p.raffleAt):''])];
  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='PDW_2027_Attendees_Claims.csv';a.click();URL.revokeObjectURL(a.href)
+}
+
+async function backupEventData(){
+ try{
+  const docs=await listDocs();
+  const packedDocs=[];
+  for(const d of docs){
+   packedDocs.push({key:d.key,name:d.value.name,type:d.value.type,size:d.value.size,updated:d.value.updated,data:await blobToDataURL(d.value.blob)});
+  }
+  const payload={version:1,event:'PDWPH-GET-TOGETHER-2027',exportedAt:new Date().toISOString(),people,selected,documents:packedDocs};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload)],{type:'application/json'}));a.download='PDW_2027_OFFLINE_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ }catch{alert('Could not create the backup file.')}
+}
+async function restoreEventData(file){
+ try{
+  const data=JSON.parse(await file.text());
+  if(!Array.isArray(data.people))throw Error('Invalid backup');
+  if(!confirm('Restore this backup and replace the current event data on this device?'))return;
+  people=normalize(data.people);selected=(Number.isInteger(data.selected)&&people[data.selected])?data.selected:null;save();
+  if(selected===null)localStorage.removeItem(S);else localStorage.setItem(S,String(selected));
+  await clearDocs();
+  for(const d of (data.documents||[])){
+    const blob=dataURLToBlob(d.data);
+    const restored=new File([blob],d.name||'document',{type:d.type||blob.type});
+    await putDoc(d.key,restored);
+  }
+  alert('Backup restored successfully.');screen='home';render();
+ }catch{alert('This backup file could not be restored.')}
 }
 
 async function startScanner(){
