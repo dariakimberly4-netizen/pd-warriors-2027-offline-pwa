@@ -31,7 +31,7 @@ function ensureLinks(){
 ensureLinks();
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
 let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null;
-const NEW_KEY='pdw-new-seen-v20';
+const NEW_KEY='pdw-new-seen-v21';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
 function markSeen(id){seenNew[id]=true;localStorage.setItem(NEW_KEY,JSON.stringify(seenNew))}
@@ -49,6 +49,75 @@ async function listDocs(){const db=await openDocDb();return new Promise((resolve
 async function clearDocs(){const db=await openDocDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DOC_STORE,'readwrite');tx.objectStore(DOC_STORE).clear();tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
 function blobToDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob)})}
 function dataURLToBlob(dataURL){const [head,data]=dataURL.split(',');const mime=(head.match(/data:(.*?);base64/)||[])[1]||'application/octet-stream';const bin=atob(data);const arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type:mime})}
+
+function u16(n){return new Uint8Array([n&255,(n>>>8)&255])}
+function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255])}
+function concatBytes(parts){let len=0;for(const p of parts)len+=p.length;const out=new Uint8Array(len);let o=0;for(const p of parts){out.set(p,o);o+=p.length}return out}
+let crcTable=null;
+function crc32(bytes){
+ if(!crcTable){crcTable=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);crcTable[n]=c>>>0}}
+ let c=0xFFFFFFFF;for(const b of bytes)c=crcTable[(c^b)&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0
+}
+function dosDateTime(ms){
+ const d=new Date(ms||Date.now()),year=Math.max(1980,d.getFullYear());
+ const time=((d.getHours()<<11)|(d.getMinutes()<<5)|(Math.floor(d.getSeconds()/2)))&0xffff;
+ const date=(((year-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xffff;
+ return {time,date}
+}
+function safeFilePart(s){return String(s||'').replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim()||'unknown'}
+async function makeZip(entries){
+ const enc=new TextEncoder(),locals=[],centrals=[];let offset=0;
+ for(const e of entries){
+   const nameBytes=enc.encode(e.name);
+   const data=new Uint8Array(await e.blob.arrayBuffer());
+   const crc=crc32(data),dt=dosDateTime(e.updated);
+   const local=concatBytes([
+     u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(dt.time),u16(dt.date),
+     u32(crc),u32(data.length),u32(data.length),u16(nameBytes.length),u16(0),nameBytes,data
+   ]);
+   locals.push(local);
+   const central=concatBytes([
+     u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(dt.time),u16(dt.date),
+     u32(crc),u32(data.length),u32(data.length),u16(nameBytes.length),u16(0),u16(0),
+     u16(0),u16(0),u32(0),u32(offset),nameBytes
+   ]);
+   centrals.push(central);offset+=local.length;
+ }
+ const centralBlock=concatBytes(centrals),localBlock=concatBytes(locals);
+ const end=concatBytes([u32(0x06054b50),u16(0),u16(0),u16(entries.length),u16(entries.length),u32(centralBlock.length),u32(localBlock.length),u16(0)]);
+ return new Blob([localBlock,centralBlock,end],{type:'application/zip'})
+}
+function docSlotInfo(key){
+ const slot=String(key).split('::')[1]||'';
+ if(slot.startsWith('pwd-'))return {group:'pwd',label:slot==='pwd-back'?'PWD-Back':'PWD-Front'};
+ if(slot.startsWith('senior-'))return {group:'senior',label:slot==='senior-back'?'Senior-ID-Back':'Senior-ID-Front'};
+ if(slot==='authorization')return {group:'authorization',label:'Authorization-Letter'};
+ return {group:'other',label:safeFilePart(slot||'Document')}
+}
+async function exportDocumentFiles(group){
+ try{
+   const docs=await listDocs(),entries=[];
+   for(const d of docs){
+     const info=docSlotInfo(d.key);
+     if(group!=='all'&&info.group!==group)continue;
+     const pass=String(d.key).split('::')[0]||'UNKNOWN';
+     const person=people.find(p=>p.id===pass);
+     const original=d.value.name||'document';
+     const dot=original.lastIndexOf('.');
+     const ext=dot>=0?original.slice(dot):'';
+     const filename=safeFilePart(pass)+'_'+safeFilePart(person?.name||'Unknown')+'_'+info.label+ext;
+     entries.push({name:filename,blob:d.value.blob,updated:d.value.updated||Date.now()});
+   }
+   if(!entries.length){alert('No uploaded '+(group==='all'?'document files':group==='pwd'?'PWD files':group==='senior'?'Senior ID files':'authorization letters')+' found on this device.');return}
+   const zip=await makeZip(entries);
+   const a=document.createElement('a');
+   a.href=URL.createObjectURL(zip);
+   const label=group==='all'?'ALL_DOCUMENTS':group==='pwd'?'PWD_FILES':group==='senior'?'SENIOR_ID_FILES':'AUTHORIZATION_LETTERS';
+   a.download='PDW_2027_'+label+'_'+new Date().toISOString().slice(0,10)+'.zip';
+   a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+   markSeen('doc-export');
+ }catch(e){alert('Could not create the document ZIP file.')}
+}
 const modules=[
  ['register','1','Register','Step 1 • Upload Excel or register manually offline'],
  ['database','DB','Attendee Database','Search imported names by first or last name'],
@@ -191,6 +260,18 @@ function body(){
    </div>
 
    <p class="note"><b>Accepted:</b> photo/image or PDF. These files stay on this device unless staff exports or downloads them.</p>
+
+   <div class="divider"></div>
+   <section class="docExportBox ${isNew('doc-export')?'newFeature':''}">
+     <div class="profileSectionTitle"><b>Export Uploaded Files</b>${isNew('doc-export')?'<span class="newPill">NEW DOWNLOADS</span>':''}</div>
+     <p class="note">Download all uploaded files by document type as ZIP files.</p>
+     <div class="docExportButtons">
+       <button type="button" class="exportDocBtn" data-export-docs="pwd">DOWNLOAD ALL PWD FILES</button>
+       <button type="button" class="exportDocBtn" data-export-docs="senior">DOWNLOAD ALL SENIOR ID FILES</button>
+       <button type="button" class="exportDocBtn" data-export-docs="authorization">DOWNLOAD ALL AUTHORIZATION LETTERS</button>
+       <button type="button" class="exportDocBtn exportAll" data-export-docs="all">DOWNLOAD ALL DOCUMENTS</button>
+     </div>
+   </section>
  </section>`:`
  <section class="panel empty"><b>No attendee selected</b><p>Open Attendee Database, search the name, then tap SELECT.</p></section>`);
 
