@@ -1,0 +1,184 @@
+/* v43 — final balanced mobile proportion
+   Tuned between the too-wide v41 and too-narrow v42 screenshots. */
+
+html.phone-device main{
+  width:100vw!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:16px 0 24px!important;
+}
+
+/* Main mobile content width */
+html.phone-device .brand,
+html.phone-device .rule,
+html.phone-device .offlineBox,
+html.phone-device .newFeatureNotice,
+html.phone-device .moduleList,
+html.phone-device .sectionHead,
+html.phone-device .panel,
+html.phone-device footer{
+  width:88vw!important;
+  max-width:520px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+/* Header */
+html.phone-device .brand{
+  grid-template-columns:68px minmax(0,1fr)!important;
+  gap:11px!important;
+}
+html.phone-device .brandLogo{
+  width:64px!important;
+  height:64px!important;
+}
+html.phone-device .org{
+  font-size:13px!important;
+  line-height:1.2!important;
+  letter-spacing:.5px!important;
+}
+html.phone-device .brand h1{
+  font-size:32px!important;
+  line-height:1.02!important;
+  margin:5px 0!important;
+}
+html.phone-device .subtitle{
+  font-size:17px!important;
+  line-height:1.2!important;
+}
+html.phone-device .rule{
+  margin-top:17px!important;
+  margin-bottom:20px!important;
+}
+
+/* Login card */
+html.phone-device .staffLoginPanel{
+  width:86vw!important;
+  max-width:500px!important;
+  margin:0 auto!important;
+  padding:22px 19px!important;
+  border-radius:20px!important;
+}
+html.phone-device .staffLoginPanel h2{
+  font-size:28px!important;
+  line-height:1.1!important;
+  margin:9px 0 11px!important;
+}
+html.phone-device .staffLoginPanel p{
+  font-size:14px!important;
+  line-height:1.5!important;
+  margin-bottom:14px!important;
+}
+html.phone-device .staffLoginPanel label{
+  font-size:14px!important;
+  margin-top:13px!important;
+}
+html.phone-device .loginBadge{
+  font-size:10px!important;
+  padding:6px 9px!important;
+}
+html.phone-device .staffLoginPanel .field{
+  min-height:52px!important;
+  margin:6px 0 3px!important;
+  padding:0 14px!important;
+  border-radius:13px!important;
+  font-size:15px!important;
+}
+html.phone-device .staffLoginPanel .primary{
+  min-height:52px!important;
+  margin-top:4px!important;
+  border-radius:13px!important;
+  font-size:14px!important;
+}
+html.phone-device .loginHint{
+  margin-top:16px!important;
+  padding:10px!important;
+  border-radius:11px!important;
+  font-size:13px!important;
+}
+html.phone-device footer{
+  padding-top:22px!important;
+  font-size:8px!important;
+}
+
+/* Home/modules */
+html.phone-device .offlineBox{
+  padding:18px 16px 18px 26px!important;
+  border-radius:18px!important;
+}
+html.phone-device .offlineTitle{font-size:20px!important}
+html.phone-device .offlineBox p{
+  font-size:15px!important;
+  line-height:1.45!important;
+}
+html.phone-device .moduleList{
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+}
+html.phone-device .moduleCard{
+  min-height:100px!important;
+  grid-template-columns:52px minmax(0,1fr) 15px!important;
+  gap:10px!important;
+  padding:11px!important;
+  border-radius:16px!important;
+}
+html.phone-device .badge{
+  height:52px!important;
+  border-radius:14px!important;
+  font-size:13px!important;
+}
+html.phone-device .moduleCopy strong{
+  font-size:19px!important;
+  line-height:1.12!important;
+}
+html.phone-device .moduleCopy small{
+  font-size:13px!important;
+  line-height:1.32!important;
+}
+html.phone-device .chev{font-size:26px!important}
+
+/* Internal screens */
+html.phone-device .panel{
+  padding:15px!important;
+  border-radius:18px!important;
+}
+html.phone-device .sectionHead h2{font-size:23px!important}
+html.phone-device .lead{font-size:15px!important}
+html.phone-device .note{font-size:12px!important}
+html.phone-device .field,
+html.phone-device .verifySelect,
+html.phone-device .notesBox{
+  font-size:14px!important;
+}
+html.phone-device .primary,
+html.phone-device .danger,
+html.phone-device .softBtn{
+  min-height:50px!important;
+  font-size:13px!important;
+}
+
+/* Narrow phones */
+@media (max-device-width:390px){
+  html.phone-device .brand,
+  html.phone-device .rule,
+  html.phone-device .offlineBox,
+  html.phone-device .newFeatureNotice,
+  html.phone-device .moduleList,
+  html.phone-device .sectionHead,
+  html.phone-device .panel,
+  html.phone-device footer{
+    width:91vw!important;
+  }
+  html.phone-device .staffLoginPanel{
+    width:89vw!important;
+    padding:20px 16px!important;
+  }
+  html.phone-device .brand{
+    grid-template-columns:60px minmax(0,1fr)!important;
+  }
+  html.phone-device .brandLogo{
+    width:56px!important;
+    height:56px!important;
+  }
+  html.phone-device .brand h1{font-size:29px!important}
+}
