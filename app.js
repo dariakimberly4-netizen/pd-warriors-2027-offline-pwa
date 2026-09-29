@@ -165,7 +165,7 @@ function home(){
    ${modules.map(([id,badge,title,desc])=>`
     <button class="moduleCard ${((id==='profile'&&isNew('profile'))||(id==='backup'&&isNew('backup'))||(id==='claims'&&isNew('claims')))?'newFeature':''}" data-screen="${id}" data-new-id="${id==='profile'?'profile':id==='backup'?'backup':id==='claims'?'claims':''}">
       <span class="badge">${badge}</span>
-      <span class="moduleCopy"><strong>${title}${id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${desc}</small></span>
+      <span class="moduleCopy"><strong>${title}${id==='profile'&&isNew('profile')?'<span class="newPill">NEW PROFILE</span>':id==='backup'&&isNew('backup')?'<span class="newPill">NEW FEATURE</span>':id==='claims'&&isNew('claims')?'<span class="newPill">NEW CHECK-IN</span>':''}</strong><small>${id==='database'&&selected!==null&&people[selected]?desc+' • Selected: '+esc(people[selected].name):desc}</small>${id==='database'&&selected!==null&&people[selected]?'<span class="selectedMini">✓ SELECTED</span>':''}</span>
       <span class="chev">›</span>
     </button>`).join('')}
  </section>`;
@@ -375,11 +375,17 @@ function render(){
 function results(){
  const hits=people.map((p,i)=>({p,i})).filter(x=>x.p.name.toLowerCase().includes(query.trim().toLowerCase()));
  if(!hits.length)return '<div class="empty">No name found.</div>';
- return hits.map(({p,i})=>`
-  <div class="personRow">
-    <div><b>${esc(p.name)}</b><small>${esc(p.type)} • Pass ${esc(p.id)} • ${p.type==='Participant'?'Raffle eligible':'No raffle'}</small></div>
-    <button class="primary select" data-i="${i}">SELECT</button>
-  </div>`).join('');
+ return hits.map(({p,i})=>{
+  const isSelected=selected===i;
+  return `
+  <div class="personRow ${isSelected?'selectedPerson':''}">
+    <div>
+      <div class="personNameLine"><b>${esc(p.name)}</b>${isSelected?'<span class="selectedTag">✓ SELECTED</span>':''}</div>
+      <small>${esc(p.type)} • Pass ${esc(p.id)} • ${p.type==='Participant'?'Raffle eligible':'No raffle'}</small>
+    </div>
+    <button class="primary select ${isSelected?'selectedBtn':''}" data-i="${i}">${isSelected?'OPEN SELECTED':'SELECT'}</button>
+  </div>`
+ }).join('');
 }
 
 function linkedPerson(p){return p.linkedId?people.find(x=>x.id===p.linkedId):null}
