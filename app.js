@@ -272,7 +272,7 @@ function claimButtons(p){
    const done=!!p[k], t=p[k+'At']||'';
    return `<button class="claim ${done?'claimed':''} ${k==='attendance'&&isNew('attendance')?'newFeature':''}" data-k="${k}" data-new-id="${k==='attendance'?'attendance':''}" ${done?'disabled':''}>
      <span>${label}${k==='attendance'&&isNew('attendance')?'<b class="newPill claimNew">NEW FEATURE</b>':''}</span>
-     <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED'):'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
+     <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED')+' • TAP TO CORRECT':'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
      ${done&&t?`<em>${formatTime(t)}${isNew('timestamps')?'<b class="timeNew"> NEW TIMESTAMP</b>':''}</em>`:''}
    </button>`
  }).join('')}</div>`;
@@ -307,6 +307,14 @@ function wire(){
  const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
  document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{
    const k=b.dataset.k;if(selected==null)return;
+   const already=!!people[selected][k];
+   if(already){
+     const label=k==='attendance'?'check-in':k+' claim';
+     if(!confirm('This '+label+' is already recorded. Undo it?'))return;
+     people[selected][k]=false;
+     people[selected][k+'At']='';
+     save();render();return;
+   }
    people[selected][k]=true;
    people[selected][k+'At']=new Date().toISOString();
    if(isNew('timestamps'))markSeen('timestamps');
