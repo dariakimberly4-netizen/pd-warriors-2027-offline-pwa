@@ -352,3 +352,8 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .claim.claimed:hover{filter:brightness(.96)}
 .claim.claimed small{font-size:11px;line-height:1.25}
 @media(max-width:620px){.claim.claimed small{font-size:12px}}
+
+/* v18 — force all claim buttons clickable after completion */
+.claim{pointer-events:auto!important;cursor:pointer!important;user-select:none!important;-webkit-tap-highlight-color:rgba(0,0,0,.08)!important}
+.claim:disabled{pointer-events:auto!important;cursor:pointer!important;opacity:1!important}
+.claim.claimed{pointer-events:auto!important;cursor:pointer!important;opacity:1!important}
