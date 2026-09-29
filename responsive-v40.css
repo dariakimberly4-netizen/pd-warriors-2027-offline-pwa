@@ -1,0 +1,305 @@
+/* PD Warriors 2027 — clean responsive master v40
+   One final override for desktop + mobile. */
+
+/* ---------- Desktop / universal ---------- */
+html,body{
+  margin:0!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  zoom:1!important;
+}
+html{-webkit-text-size-adjust:100%!important}
+*{box-sizing:border-box!important}
+img,video,canvas,svg{max-width:100%!important;height:auto!important}
+button,input,select,textarea{max-width:100%!important;min-width:0!important}
+
+main{
+  width:min(calc(100% - 48px),1180px)!important;
+  max-width:1180px!important;
+  margin:0 auto!important;
+  padding:26px 0 24px!important;
+}
+.moduleList{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:16px!important;
+}
+.moduleCard{min-width:0!important}
+.panel{min-width:0!important}
+
+/* ---------- Phones / mobile browsers ---------- */
+html.phone-device body{
+  font-size:16px!important;
+  line-height:1.45!important;
+}
+html.phone-device main{
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:14px 0 22px!important;
+}
+
+/* Keep the whole mobile design visually balanced instead of edge-to-edge */
+html.phone-device .brand,
+html.phone-device .rule,
+html.phone-device .offlineBox,
+html.phone-device .newFeatureNotice,
+html.phone-device .moduleList,
+html.phone-device .sectionHead,
+html.phone-device .panel,
+html.phone-device footer{
+  width:90%!important;
+  max-width:460px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+/* Header */
+html.phone-device .brand{
+  display:grid!important;
+  grid-template-columns:58px minmax(0,1fr)!important;
+  gap:10px!important;
+  align-items:center!important;
+}
+html.phone-device .brandLogo{
+  width:56px!important;
+  height:56px!important;
+}
+html.phone-device .org{
+  font-size:11px!important;
+  line-height:1.2!important;
+  letter-spacing:.45px!important;
+}
+html.phone-device .brand h1{
+  font-size:29px!important;
+  line-height:1.02!important;
+  margin:4px 0!important;
+}
+html.phone-device .subtitle{
+  font-size:15px!important;
+  line-height:1.2!important;
+}
+html.phone-device .rule{
+  height:3px!important;
+  margin-top:14px!important;
+  margin-bottom:18px!important;
+}
+
+/* Login card — clearly narrower and proportioned */
+html.phone-device .staffLoginPanel{
+  width:86%!important;
+  max-width:430px!important;
+  margin:0 auto!important;
+  padding:18px 16px!important;
+  border-radius:18px!important;
+  box-shadow:0 8px 22px rgba(28,70,45,.10)!important;
+}
+html.phone-device .staffLoginPanel h2{
+  font-size:24px!important;
+  line-height:1.1!important;
+  margin:8px 0 10px!important;
+}
+html.phone-device .staffLoginPanel p{
+  font-size:13px!important;
+  line-height:1.45!important;
+  margin:6px 0 12px!important;
+}
+html.phone-device .staffLoginPanel label{
+  display:block!important;
+  font-size:13px!important;
+  margin-top:11px!important;
+}
+html.phone-device .loginBadge{
+  font-size:9px!important;
+  padding:5px 8px!important;
+}
+html.phone-device .staffLoginPanel .field{
+  width:100%!important;
+  min-height:46px!important;
+  margin:5px 0!important;
+  padding:0 12px!important;
+  border-radius:12px!important;
+  font-size:14px!important;
+}
+html.phone-device .staffLoginPanel .primary{
+  width:100%!important;
+  min-height:46px!important;
+  border-radius:12px!important;
+  font-size:13px!important;
+  padding:6px 12px!important;
+}
+html.phone-device .loginMsg{
+  min-height:16px!important;
+  font-size:12px!important;
+}
+html.phone-device .loginHint{
+  margin-top:12px!important;
+  padding:9px 10px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+}
+html.phone-device footer{
+  padding:20px 0 4px!important;
+  font-size:8px!important;
+  letter-spacing:.6px!important;
+}
+
+/* Home */
+html.phone-device .offlineBox{
+  padding:16px 14px 16px 22px!important;
+  margin-bottom:14px!important;
+  border-radius:16px!important;
+}
+html.phone-device .offlineTitle{
+  font-size:18px!important;
+  margin-bottom:6px!important;
+}
+html.phone-device .offlineBox p{
+  font-size:13px!important;
+  line-height:1.42!important;
+}
+html.phone-device .newFeatureNotice{
+  font-size:11px!important;
+  margin-bottom:10px!important;
+}
+html.phone-device .moduleList{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:9px!important;
+}
+html.phone-device .moduleCard{
+  width:100%!important;
+  min-height:88px!important;
+  grid-template-columns:44px minmax(0,1fr) 12px!important;
+  gap:8px!important;
+  padding:9px 10px!important;
+  border-radius:14px!important;
+}
+html.phone-device .badge{
+  height:44px!important;
+  border-radius:12px!important;
+  font-size:11px!important;
+}
+html.phone-device .moduleCopy{
+  gap:3px!important;
+}
+html.phone-device .moduleCopy strong{
+  font-size:16px!important;
+  line-height:1.1!important;
+  overflow-wrap:anywhere!important;
+}
+html.phone-device .moduleCopy small{
+  font-size:11px!important;
+  line-height:1.28!important;
+  overflow-wrap:anywhere!important;
+}
+html.phone-device .chev{font-size:22px!important}
+html.phone-device .newPill{font-size:7px!important;padding:2px 4px!important}
+
+/* Inner screens */
+html.phone-device .sectionHead{
+  gap:6px!important;
+  margin-top:0!important;
+  margin-bottom:8px!important;
+}
+html.phone-device .sectionHead h2{
+  font-size:20px!important;
+  line-height:1.15!important;
+}
+html.phone-device .backBtn{font-size:12px!important}
+html.phone-device .panel{
+  padding:13px!important;
+  margin-top:8px!important;
+  border-radius:15px!important;
+}
+html.phone-device .lead{font-size:13px!important}
+html.phone-device .note{font-size:11px!important}
+html.phone-device .field,
+html.phone-device .verifySelect,
+html.phone-device .notesBox{
+  width:100%!important;
+  font-size:13px!important;
+}
+html.phone-device .field{min-height:46px!important}
+html.phone-device .primary,
+html.phone-device .danger,
+html.phone-device .softBtn{
+  min-height:46px!important;
+  font-size:12px!important;
+  padding:6px 10px!important;
+}
+
+/* Make all mobile content stack cleanly */
+html.phone-device .personRow,
+html.phone-device .selectedProceed,
+html.phone-device .selectedBanner,
+html.phone-device .profileHero,
+html.phone-device .staffBar,
+html.phone-device .winnerRow,
+html.phone-device .auditRow{
+  flex-direction:column!important;
+  align-items:stretch!important;
+}
+html.phone-device .split,
+html.phone-device .profileQuick,
+html.phone-device .reportActions,
+html.phone-device .passDownloadActions,
+html.phone-device .supervisorActions,
+html.phone-device .docExportButtons,
+html.phone-device .claimDocButtons,
+html.phone-device .claimDocNames,
+html.phone-device .summaryGrid,
+html.phone-device .reportGrid,
+html.phone-device .claims{
+  grid-template-columns:1fr!important;
+}
+html.phone-device .verifyRow{grid-template-columns:1fr!important}
+html.phone-device .personRow .select,
+html.phone-device .personRow .selectedBtn,
+html.phone-device .selectedProceed .primary,
+html.phone-device .selectedBanner .primary{width:100%!important}
+
+/* Filters */
+html.phone-device .attendeeFilters{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:5px!important;
+}
+html.phone-device .filterBtn{
+  width:100%!important;
+  min-height:38px!important;
+  font-size:9px!important;
+  padding:4px!important;
+}
+
+/* Documents + QR */
+html.phone-device .docUploadTop{
+  flex-direction:column!important;
+  align-items:flex-start!important;
+}
+html.phone-device .docActions{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+}
+html.phone-device .docUploadBtn{grid-column:1/-1!important}
+html.phone-device .docUploadBtn,
+html.phone-device .docViewBtn,
+html.phone-device .docDeleteBtn{width:100%!important}
+html.phone-device .qr img,
+html.phone-device .qr canvas{
+  width:min(100%,230px)!important;
+  height:auto!important;
+}
+html.phone-device .camera,
+html.phone-device .qrReader{
+  width:100%!important;
+  max-width:100%!important;
+}
+
+/* Tablet */
+@media (min-width:621px) and (max-width:900px){
+  main{width:calc(100% - 32px)!important}
+  .moduleList{grid-template-columns:1fr!important}
+}
