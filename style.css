@@ -524,3 +524,10 @@ footer{text-align:center;color:#8a8d86;font-size:13px;letter-spacing:1px;padding
 .docStatus.notRequired{background:#edf1ed!important;color:#59665e!important;border:1px solid #bdc8bf}
 .verifySelect option[value="Not Required"]{font-weight:700}
 @media(max-width:620px){.companionDocNotice b{font-size:19px}.companionDocNotice span{font-size:16px}}
+
+/* v30 — fully local offline QR scanner */
+.qrReader{display:none;min-height:320px!important;overflow:hidden;background:#fff}
+.qrReader video{width:100%!important;height:auto!important;max-height:460px!important;object-fit:cover!important;border-radius:14px}
+.qrReader img{max-width:100%!important}
+.nativeCamera{display:none}
+@media(max-width:620px){.qrReader{min-height:300px!important}}
