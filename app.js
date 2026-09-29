@@ -7,7 +7,7 @@ const defaultPeople=[
 const normalize=a=>a.map((p,i)=>({...p,id:p.id||((p.type==='Companion'?'C':'P')+'-'+String(i+1).padStart(4,'0')),attendance:!!p.attendance,attendanceAt:p.attendanceAt||'',snack:!!p.snack,snackAt:p.snackAt||'',lunch:!!p.lunch,lunchAt:p.lunchAt||'',raffle:p.type==='Companion'?null:!!p.raffle,raffleAt:p.type==='Companion'?'':(p.raffleAt||'')}));
 let people=normalize(JSON.parse(localStorage.getItem(K)||localStorage.getItem('pdw-people-v3')||localStorage.getItem('pdw-people')||'null')||defaultPeople);
 let selected=Number(localStorage.getItem(S)); if(!Number.isInteger(selected)||!people[selected]) selected=null;
-let screen='home', query='', winner='', scannerStream=null;
+let screen='home', query='', winner='', scannerStream=null, pendingCorrection=null;
 const NEW_KEY='pdw-new-seen-v16';
 let seenNew={};try{seenNew=JSON.parse(localStorage.getItem(NEW_KEY)||'{}')}catch{}
 function isNew(id){return !seenNew[id]}
@@ -39,7 +39,7 @@ const modules=[
 ];
 
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
-function setScreen(s){screen=s; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
+function setScreen(s){screen=s; pendingCorrection=null; stopScanner(); render(); if(s==='scanner') setTimeout(startScanner,100)}
 function selectPerson(i){selected=i;localStorage.setItem(S,String(i));screen='documents';render();setTimeout(refreshDocStatuses,0)}
 function passId(type,n,raw){if(raw)return String(raw).trim();return(type==='Companion'?'C':'P')+'-'+String(n).padStart(4,'0')}
 
@@ -267,13 +267,13 @@ function passCard(p){return `
 function formatTime(v){if(!v)return'';try{return new Date(v).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}catch{return v}}
 function claimButtons(p){
  const ks=['attendance','snack','lunch',...(p.raffle===null?[]:['raffle'])];
- return `<div class="claims">${ks.map(k=>{
+ return `<div class="claims" id="claimsGrid">${ks.map(k=>{
    const label=k==='attendance'?'CHECK-IN':k.toUpperCase();
-   const done=!!p[k], t=p[k+'At']||'';
+   const done=!!p[k], t=p[k+'At']||'', correcting=pendingCorrection===k;
    const highlight=k==='attendance'&&!done;
-   return `<button type="button" class="claim ${done?'claimed':''} ${highlight?'newFeature checkinHighlight':''}" data-k="${k}" aria-pressed="${done?'true':'false'}">
+   return `<button type="button" class="claim ${done?'claimed':''} ${highlight?'newFeature checkinHighlight':''} ${correcting?'correctionMode':''}" data-k="${k}" aria-pressed="${done?'true':'false'}">
      <span>${label}${highlight?'<b class="newPill claimNew">NEW FEATURE</b>':''}</span>
-     <small>${done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED')+' • TAP TO CORRECT':'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
+     <small>${correcting?'TAP AGAIN TO UNDO':done?'✓ '+(k==='attendance'?'CHECKED IN':'CLAIMED')+' • TAP TO CORRECT':'TAP TO '+(k==='attendance'?'CHECK IN':'CLAIM')}</small>
      ${done&&t?`<em>${formatTime(t)}</em>`:''}
    </button>`
  }).join('')}</div>`;
@@ -306,21 +306,28 @@ function wire(){
   else el.textContent='QR library loading…';
  }
  const g=document.getElementById('gotoclaims'); if(g)g.onclick=()=>setScreen('claims');
- document.querySelectorAll('.claim').forEach(b=>b.onclick=()=>{
-   const k=b.dataset.k;if(selected==null)return;
+ const claimsGrid=document.getElementById('claimsGrid');
+ if(claimsGrid)claimsGrid.addEventListener('click',e=>{
+   const b=e.target.closest('.claim'); if(!b||selected==null)return;
+   e.preventDefault(); e.stopPropagation();
+   const k=b.dataset.k;
    const already=!!people[selected][k];
    if(already){
-     const label=k==='attendance'?'check-in':k+' claim';
-     if(!confirm('This '+label+' is already recorded. Undo it?'))return;
-     people[selected][k]=false;
-     people[selected][k+'At']='';
-     save();render();return;
+     if(pendingCorrection===k){
+       people[selected][k]=false;
+       people[selected][k+'At']='';
+       pendingCorrection=null;
+       save(); render(); return;
+     }
+     pendingCorrection=k;
+     render(); return;
    }
+   pendingCorrection=null;
    people[selected][k]=true;
    people[selected][k+'At']=new Date().toISOString();
    if(isNew('timestamps'))markSeen('timestamps');
-   save();render()
- });
+   save(); render();
+ },true);
  const d=document.getElementById('draw'); if(d)d.onclick=()=>{const pool=people.filter(x=>x.type==='Participant');winner=pool.length?pool[Math.floor(Math.random()*pool.length)].name:'No participants';render()};
  const c=document.getElementById('csv'); if(c)c.onclick=exportCsv;
  const bk=document.getElementById('backupNow'); if(bk)bk.onclick=backupEventData;
