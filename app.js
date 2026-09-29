@@ -214,13 +214,14 @@ function renderReadinessResults(){
 }
 async function runReadinessCheck(){
  const results=[];
+ results.push({id:'internet',ok:navigator.onLine?'warn':true,note:navigator.onLine?'Internet is ON. Disconnect Wi-Fi or mobile data and run this check again for a true offline test.':'Internet is OFF. This is a true offline test.'});
  let swOk=false,cacheOk=false,dbOk=false;
  try{swOk=!!navigator.serviceWorker?.controller}catch{}
  results.push({id:'sw',ok:swOk,note:swOk?'Offline service worker is active.':'Open this site online once and refresh so offline mode can activate.'});
  try{
-   if('caches' in window){const keys=await caches.keys();cacheOk=keys.some(k=>k==='pdw-2027-v25')}
+   if('caches' in window){const keys=await caches.keys();cacheOk=keys.some(k=>k==='pdw-2027-v28')}
  }catch{}
- results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v25 app files are cached.':'Current version is not fully cached yet. Open it online once.'});
+ results.push({id:'cache',ok:cacheOk,note:cacheOk?'Current v28 app files are cached for offline use.':'Current version is not fully cached yet. Open it online once.'});
  results.push({id:'attendees',ok:people.length>0,note:people.length?people.length+' attendee record(s) saved locally.':'No attendee list is saved on this device.'});
  try{const db=await openDocDb();dbOk=!!db;db.close()}catch{}
  results.push({id:'docs',ok:dbOk,note:dbOk?'Local document storage is available.':'Local document storage could not be opened.'});
@@ -564,8 +565,9 @@ function body(){
    <p class="lead">Run this check on the actual phone, tablet, or laptop that will be used during the event.</p>
    <div id="readySummary" class="readySummary"><b>CHECK NOT RUN YET</b><span>Tap the button below.</span></div>
    <div class="readyList">
+     ${readinessRow('internet','Internet Connection','Offline test status')}
      ${readinessRow('sw','Offline App','Service worker / offline shell')}
-     ${readinessRow('cache','Current Version Cached','v25 app files')}
+     ${readinessRow('cache','Current Version Cached','v28 app files')}
      ${readinessRow('attendees','Attendee List','Participant and companion records')}
      ${readinessRow('docs','Local Document Storage','PWD, Senior ID and Authorization files')}
      ${readinessRow('excel','Excel Import','Offline spreadsheet import')}
@@ -575,7 +577,7 @@ function body(){
      ${readinessRow('backup','Backup File','Recent event backup')}
    </div>
    <button id="runReady" class="primary full">RUN OFFLINE READINESS CHECK</button>
-   <p class="note">For the strongest test, run this once online, then switch the device to airplane mode and open the system again.</p>
+   <p class="note">After the system has been opened online once and cached, disconnect Wi-Fi or mobile data, reopen the system, and run this check again. Green results confirm offline readiness.</p>
  </section>`;
 
  if(screen==='backup')return pageHeader('Backup / Restore')+`
