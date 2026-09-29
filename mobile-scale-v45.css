@@ -1,0 +1,154 @@
+/* v45 — Android custom-tab scale correction.
+   The previous widths were mathematically correct, but the browser was visually shrinking
+   the whole page. This scales the mobile canvas itself, then keeps every panel proportional. */
+
+html.phone-device body{
+  overflow-x:hidden!important;
+}
+
+/* Chrome/Android supports CSS zoom. 62vw × 1.45 ≈ 90vw visible width. */
+@supports (zoom:1.1){
+  html.phone-device main{
+    width:62vw!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    padding:12px 0 20px!important;
+    zoom:1.45!important;
+  }
+}
+
+/* Fallback for browsers without CSS zoom. */
+@supports not (zoom:1.1){
+  html.phone-device main{
+    width:69vw!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    padding:12px 0 20px!important;
+    transform:scale(1.30)!important;
+    transform-origin:top center!important;
+  }
+}
+
+/* Everything follows the corrected mobile canvas width. */
+html.phone-device .brand,
+html.phone-device .rule,
+html.phone-device .staffLoginPanel,
+html.phone-device .offlineBox,
+html.phone-device .newFeatureNotice,
+html.phone-device .moduleList,
+html.phone-device .sectionHead,
+html.phone-device .panel,
+html.phone-device footer{
+  width:100%!important;
+  max-width:none!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+
+/* Balanced header */
+html.phone-device .brand{
+  grid-template-columns:54px minmax(0,1fr)!important;
+  gap:9px!important;
+}
+html.phone-device .brandLogo{
+  width:52px!important;
+  height:52px!important;
+}
+html.phone-device .org{
+  font-size:10px!important;
+  line-height:1.2!important;
+  letter-spacing:.35px!important;
+}
+html.phone-device .brand h1{
+  font-size:26px!important;
+  line-height:1.02!important;
+  margin:4px 0!important;
+}
+html.phone-device .subtitle{
+  font-size:14px!important;
+}
+html.phone-device .rule{
+  height:2px!important;
+  margin-top:13px!important;
+  margin-bottom:16px!important;
+}
+
+/* Login card */
+html.phone-device .staffLoginPanel{
+  padding:17px 15px!important;
+  border-radius:16px!important;
+}
+html.phone-device .staffLoginPanel h2{
+  font-size:22px!important;
+  margin:7px 0 9px!important;
+}
+html.phone-device .staffLoginPanel p{
+  font-size:11px!important;
+  line-height:1.45!important;
+}
+html.phone-device .staffLoginPanel label{
+  font-size:11px!important;
+  margin-top:10px!important;
+}
+html.phone-device .loginBadge{
+  font-size:8px!important;
+  padding:4px 7px!important;
+}
+html.phone-device .staffLoginPanel .field{
+  min-height:42px!important;
+  font-size:12px!important;
+  padding:0 10px!important;
+  border-radius:10px!important;
+}
+html.phone-device .staffLoginPanel .primary{
+  min-height:42px!important;
+  font-size:11px!important;
+  border-radius:10px!important;
+}
+html.phone-device .loginHint{
+  font-size:10px!important;
+  padding:8px!important;
+  margin-top:11px!important;
+}
+html.phone-device footer{
+  padding-top:16px!important;
+  font-size:6px!important;
+}
+
+/* Home modules and inner screens */
+html.phone-device .moduleList{
+  grid-template-columns:1fr!important;
+  gap:8px!important;
+}
+html.phone-device .moduleCard{
+  min-height:78px!important;
+  grid-template-columns:42px minmax(0,1fr) 11px!important;
+  gap:7px!important;
+  padding:8px!important;
+  border-radius:12px!important;
+}
+html.phone-device .badge{
+  height:42px!important;
+  border-radius:11px!important;
+  font-size:10px!important;
+}
+html.phone-device .moduleCopy strong{font-size:15px!important}
+html.phone-device .moduleCopy small{font-size:10px!important}
+html.phone-device .chev{font-size:20px!important}
+
+html.phone-device .panel{
+  padding:12px!important;
+  border-radius:14px!important;
+}
+html.phone-device .sectionHead h2{font-size:18px!important}
+html.phone-device .lead{font-size:12px!important}
+html.phone-device .note{font-size:9px!important}
+html.phone-device .field,
+html.phone-device .verifySelect,
+html.phone-device .notesBox{font-size:11px!important}
+html.phone-device .primary,
+html.phone-device .danger,
+html.phone-device .softBtn{
+  min-height:40px!important;
+  font-size:10px!important;
+}
